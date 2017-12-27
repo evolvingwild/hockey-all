@@ -620,14 +620,3 @@ fun.teammate <- function(data, year) {
 }
 
 rel_TM_1718_EV <- fun.teammate(pbp_data, "20172018")
-
-
-
-
-
-
-
-
-
-
-
