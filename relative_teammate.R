@@ -791,6 +791,7 @@ teams <- on_ice_EV %>%
   mutate(Team = paste0(Team, collapse = "/")) %>% 
   summarise(Team = first(Team))
 
+
 # WOWY
 fun.rel_source <- function(TM_data, games_data, position_data, year) {
   
@@ -897,6 +898,7 @@ fun.rel_source <- function(TM_data, games_data, position_data, year) {
 }
 rel_source_EV <- fun.rel_source(rel_TM_combos_EV, on_ice_EV, player_position, "20172018")
 
+
 # Relative to Teammate - Initial & TOI Adjust
 fun.rel_teammate <- function(data, position_data, teams_data) {
   rel_TM_impact <- data %>% 
@@ -988,6 +990,7 @@ fun.rel_teammate <- function(data, position_data, teams_data) {
 }
 rel_TM_player <- fun.rel_teammate(rel_source_EV, player_position, teams)
 
+
 # Relative to Teammate - Team Adjust
 fun.rel_teammate_adj <- function(data) {
   
@@ -998,17 +1001,18 @@ fun.rel_teammate_adj <- function(data) {
            tm_xGA_center = adj_w_TM_xGA60 - mean(adj_w_TM_xGA60), 
            
            n_rel_CF60 = round(CF60 - (tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2), 
-           n_rel_CA60 = round(CA60 - (tm_CA_center*.87 + mean(adj_w_TM_CA60)), 2), 
-           n_rel_xGF60 = round(xGF60 - (tm_xGF_center*.8 + mean(adj_w_TM_xGF60)), 3), 
-           n_rel_xGA60 = round(xGA60 - (tm_xGA_center*.87 + mean(adj_w_TM_xGA60)), 3),
+           n_rel_CA60 = round(CA60 - (tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
+           n_rel_xGF60 = round(xGF60 - (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)), 3), 
+           n_rel_xGA60 = round(xGA60 - (tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3),
            
            n_rel_CF_TM_perc = 100 * round(CF60/(CF60 + CA60) - 
                                             (tm_CF_center*.8 + mean(adj_w_TM_CF60)) / 
                                             ((tm_CF_center*.8 + mean(adj_w_TM_CF60)) + 
-                                               (tm_CA_center*.87 + mean(adj_w_TM_CA60))) + .5, 4), 
-           n_rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - (tm_xGF_center*.8 + mean(adj_w_TM_xGF60)) / 
-                                             ((tm_xGF_center*.8 + mean(adj_w_TM_xGF60)) + 
-                                                (tm_xGA_center*.87 + mean(adj_w_TM_xGA60))) + .5, 4), 
+                                               (tm_CA_center*.88 + mean(adj_w_TM_CA60))) + .5, 4), 
+           n_rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - 
+                                             (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) / 
+                                             ((tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) + 
+                                                (tm_xGA_center*.85 + mean(adj_w_TM_xGA60))) + .5, 4), 
            
            n_CF_impact = round(n_rel_CF60*(TOI/60), 2), 
            n_CA_impact = round(n_rel_CA60*(TOI/60), 2), 
