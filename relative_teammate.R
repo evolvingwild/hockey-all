@@ -16,6 +16,9 @@ colnames(scoreadj_corsi) <- c("home_lead", "home_corsi_adj", "away_corsi_adj")
 xG_adj_h <- 0.9468472
 xG_adj_a <- 1.059477
 
+# Skater Positions
+player_position <- readRDS("skater_position.rds")
+
 ## Objects
 st.fenwick_events <- c("SHOT", "GOAL", "MISS")
 st.corsi_events <- c("SHOT", "GOAL", "MISS", "BLOCK" )
