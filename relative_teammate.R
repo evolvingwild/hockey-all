@@ -2,11 +2,14 @@
 #####        Relative to Teammate       ||              12/26/17            #####
 #################################################################################
 
+# NHL pbp data scraped using Emmanuel Perry's dryscrape functions, availble here: https://github.com/mannyelk/corsica/tree/master/modules
+# xG model developed by Emmanuel Perry, available here: https://github.com/mannyelk/corsica/tree/master/models
+
+
 library(dplyr)
 
 options(scipen = 999)
 
-# All xG data created using Emmanuel Perry's xG Model, available here: https://github.com/mannyelk/corsica/tree/master/models
 
 # Create Score Adjust Data Frame / xG adjustment
 scoreadj_corsi <- data.frame(matrix(nrow = 7, ncol = 3))
