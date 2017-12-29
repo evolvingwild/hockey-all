@@ -6,6 +6,8 @@ library(dplyr)
 
 options(scipen = 999)
 
+# All xG data created using Emmanuel Perry's xG Model, available here: https://github.com/mannyelk/corsica/tree/master/models
+
 # Create Score Adjust Data Frame / xG adjustment
 scoreadj_corsi <- data.frame(matrix(nrow = 7, ncol = 3))
 scoreadj_corsi[, 1] <- c(1, 2, 3, 4, 5, 6, 7)
