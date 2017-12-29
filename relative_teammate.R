@@ -1034,4 +1034,3 @@ fun.rel_teammate_adj <- function(data) {
            n_rel_CF60:n_xG_total_impact)
   }
 rel_TM_player_adj <- fun.rel_teammate_adj(rel_TM_player)
-
