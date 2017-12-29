@@ -1,10 +1,8 @@
 #################################################################################
-#####        Relative to Teammate     ||              12/26/17              #####
+#####        Relative to Teammate       ||              12/26/17            #####
 #################################################################################
 
 library(dplyr)
-
-setwd("~/RStudio/hockey-all")
 
 options(scipen = 999)
 
@@ -15,7 +13,7 @@ scoreadj_corsi[, 2] <- c(0.840, 0.865, 0.898, 0.970, 1.052, 1.104, 1.138)
 scoreadj_corsi[, 3] <- c(1.236, 1.186, 1.128, 1.032, 0.953, 0.914, 0.892)
 colnames(scoreadj_corsi) <- c("home_lead", "home_corsi_adj", "away_corsi_adj")
 
-xG_adj_h <- .9468472
+xG_adj_h <- 0.9468472
 xG_adj_a <- 1.059477
 
 ## Objects
@@ -58,7 +56,6 @@ rel_adj <- function(t_metric_wo, t_toi_wo, t_metric, cut, perc) {
   }
 
 
-
 ## ------------------------------------------------- ##
 ##       EV On-Ice Shot Metrics - Game by Game       ##
 ## ------------------------------------------------- ##
@@ -67,7 +64,6 @@ rel_adj <- function(t_metric_wo, t_toi_wo, t_metric, cut, perc) {
 fun.onice_H <- function(data, venue) {
   
   on_ice <- data %>% 
-    filter(game_period < 5) %>%  
     summarise(Team = first(home_team), 
               TOI = sum(event_length)/60,
               GF = sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
@@ -83,7 +79,6 @@ fun.onice_H <- function(data, venue) {
 fun.onice_A <- function(data, venue) {
   
   on_ice <- data %>% 
-    filter(game_period < 5) %>%  
     summarise(Team = first(away_team), 
               TOI = sum(event_length)/60,
               GF = sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
@@ -826,7 +821,8 @@ fun.rel_source <- function(TM_data, games_data, position_data, year) {
   # Join
   relmerge_P <- left_join(prep_TM, rel_player, by = c("player", "season"))
   relmerge_T <- left_join(prep_TM, rel_teammate, by = c("teammate", "season"))
-  rel_All <- left_join(relmerge_P, relmerge_T, by = c("player", "teammate", "season", "TOI_tog", "CF_tog", "CA_tog", "xGF_tog", "xGA_tog"))
+  rel_All <- left_join(relmerge_P, relmerge_T, by = c("player", "teammate", "season", "TOI_tog", 
+                                                      "CF_tog", "CA_tog", "xGF_tog", "xGA_tog"))
   
   
   # Add in positions
@@ -845,33 +841,33 @@ fun.rel_source <- function(TM_data, games_data, position_data, year) {
   # Calculate With/Without Numbers for Each Player & Teammate
   rel_TM_metrics <- rel_All_position %>% 
     mutate(TM_TOI_w.o = TOI_t - TOI_tog,
-           TM_CF_w.o = CF_t - CF_tog,
-           TM_CA_w.o = CA_t - CA_tog,
+           TM_CF_w.o  = CF_t - CF_tog,
+           TM_CA_w.o  = CA_t - CA_tog,
            TM_xGF_w.o = xGF_t - xGF_tog,
            TM_xGA_w.o = xGA_t - xGA_tog
            ) %>% 
     filter(TM_TOI_w.o > 0) %>% 
-    mutate(TM_CF_60_w.o = round(((TM_CF_w.o / TM_TOI_w.o) * 60), 2), 
-           TM_CA_60_w.o = round(((TM_CA_w.o / TM_TOI_w.o) * 60), 2), 
+    mutate(TM_CF_60_w.o  = round(((TM_CF_w.o / TM_TOI_w.o) * 60), 2), 
+           TM_CA_60_w.o  = round(((TM_CA_w.o / TM_TOI_w.o) * 60), 2), 
            TM_xGF_60_w.o = round(((TM_xGF_w.o / TM_TOI_w.o) * 60), 3), 
            TM_xGA_60_w.o = round(((TM_xGA_w.o / TM_TOI_w.o) * 60), 3), 
            
            player_TOI_perc_w = round(TOI_tog / TOI_p, 4),
            
-           weighted_TM_CF60 = TM_CF_60_w.o * player_TOI_perc_w, 
-           weighted_TM_CA60 = TM_CA_60_w.o * player_TOI_perc_w, 
+           weighted_TM_CF60  = TM_CF_60_w.o * player_TOI_perc_w, 
+           weighted_TM_CA60  = TM_CA_60_w.o * player_TOI_perc_w, 
            weighted_TM_xGF60 = TM_xGF_60_w.o * player_TOI_perc_w, 
            weighted_TM_xGA60 = TM_xGA_60_w.o * player_TOI_perc_w, 
            
           # Adjust teammate for low TOI without player
-           adj_weighted_TM_CF60 = ifelse(TM_TOI_w.o <= off_f_cut & TM_position == 1, 
+           adj_weighted_TM_CF60  = ifelse(TM_TOI_w.o <= off_f_cut & TM_position == 1, 
                                          rel_adj(TM_CF_60_w.o, TM_TOI_w.o, CF60_t, off_f_cut, player_TOI_perc_w), 
                                          
                                          ifelse(TM_TOI_w.o <= off_d_cut & TM_position == 2, 
                                                 rel_adj(TM_CF_60_w.o, TM_TOI_w.o, CF60_t, off_d_cut, player_TOI_perc_w), 
                                                 weighted_TM_CF60)), 
            
-           adj_weighted_TM_CA60 = ifelse(TM_TOI_w.o <= def_f_cut & TM_position == 1, 
+           adj_weighted_TM_CA60  = ifelse(TM_TOI_w.o <= def_f_cut & TM_position == 1, 
                                          rel_adj(TM_CA_60_w.o, TM_TOI_w.o, CA60_t, def_f_cut, player_TOI_perc_w), 
                                          
                                          ifelse(TM_TOI_w.o <= def_d_cut & TM_position == 2, 
@@ -903,16 +899,16 @@ rel_source_EV <- fun.rel_source(rel_TM_combos_EV, on_ice_EV, player_position, "2
 fun.rel_teammate <- function(data, position_data, teams_data) {
   rel_TM_impact <- data %>% 
     group_by(player, season) %>%
-    summarise(TOI = first(TOI_p),
-              CF60 = first(CF60_p),
-              CA60 = first(CA60_p),
+    summarise(TOI   = first(TOI_p),
+              CF60  = first(CF60_p),
+              CA60  = first(CA60_p),
               xGF60 = first(xGF60_p),
               xGA60 = first(xGA60_p),
               
               perc_total = sum(player_TOI_perc_w),
               
-              weighted_TM_CF_raw = sum(weighted_TM_CF60),
-              weighted_TM_CA_raw = sum(weighted_TM_CA60),
+              weighted_TM_CF_raw  = sum(weighted_TM_CF60),
+              weighted_TM_CA_raw  = sum(weighted_TM_CA60),
               weighted_TM_xGF_raw = sum(weighted_TM_xGF60),
               weighted_TM_xGA_raw = sum(weighted_TM_xGA60), 
               
@@ -921,46 +917,46 @@ fun.rel_teammate <- function(data, position_data, teams_data) {
               adj_weighted_TM_xGF_raw = sum(adj_weighted_TM_xGF60),
               adj_weighted_TM_xGA_raw = sum(adj_weighted_TM_xGA60)
               ) %>% 
-    mutate(w_TM_CF60 = round(weighted_TM_CF_raw / perc_total, 2),
-           w_TM_CA60 = round(weighted_TM_CA_raw / perc_total, 2),
-           w_TM_xGF60 = round(weighted_TM_xGF_raw / perc_total, 3),
-           w_TM_xGA60 = round(weighted_TM_xGA_raw / perc_total, 3),
+    mutate(w_TM_CF60  = weighted_TM_CF_raw / perc_total,
+           w_TM_CA60  = weighted_TM_CA_raw / perc_total, 
+           w_TM_xGF60 = weighted_TM_xGF_raw / perc_total, 
+           w_TM_xGA60 = weighted_TM_xGA_raw / perc_total, 
            
-           adj_w_TM_CF60 = round(adj_weighted_TM_CF_raw / perc_total, 2),
-           adj_w_TM_CA60 = round(adj_weighted_TM_CA_raw / perc_total, 2),
-           adj_w_TM_xGF60 = round(adj_weighted_TM_xGF_raw / perc_total, 3),
-           adj_w_TM_xGA60 = round(adj_weighted_TM_xGA_raw / perc_total, 3),
+           adj_w_TM_CF60  = adj_weighted_TM_CF_raw / perc_total, 
+           adj_w_TM_CA60  = adj_weighted_TM_CA_raw / perc_total, 
+           adj_w_TM_xGF60 = adj_weighted_TM_xGF_raw / perc_total, 
+           adj_w_TM_xGA60 = adj_weighted_TM_xGA_raw / perc_total, 
            
-           rel_CF60_TM = round(CF60 - w_TM_CF60, 2),
-           rel_CA60_TM = round(CA60 - w_TM_CA60, 2),
-           rel_xGF60_TM = round(xGF60 - w_TM_xGF60, 3),
-           rel_xGA60_TM = round(xGA60 - w_TM_xGA60, 3),
+           rel_CF60_TM  = CF60 - w_TM_CF60, 
+           rel_CA60_TM  = CA60 - w_TM_CA60, 
+           rel_xGF60_TM = xGF60 - w_TM_xGF60, 
+           rel_xGA60_TM = xGA60 - w_TM_xGA60, 
            
-           adj_rel_CF60_TM = round(CF60 - adj_w_TM_CF60, 2),
-           adj_rel_CA60_TM = round(CA60 - adj_w_TM_CA60, 2),
-           adj_rel_xGF60_TM = round(xGF60 - adj_w_TM_xGF60, 3),
-           adj_rel_xGA60_TM = round(xGA60 - adj_w_TM_xGA60, 3),
+           adj_rel_CF60_TM  = CF60 - adj_w_TM_CF60,
+           adj_rel_CA60_TM  = CA60 - adj_w_TM_CA60, 
+           adj_rel_xGF60_TM = xGF60 - adj_w_TM_xGF60, 
+           adj_rel_xGA60_TM = xGA60 - adj_w_TM_xGA60, 
            
-           CF_impact = round(rel_CF60_TM * (TOI / 60), 2),
-           CA_impact = round(rel_CA60_TM * (TOI / 60), 2),
-           xGF_impact = round(rel_xGF60_TM * (TOI / 60), 2),
-           xGA_impact = round(rel_xGA60_TM * (TOI / 60), 2),
+           CF_impact  = rel_CF60_TM * (TOI / 60), 
+           CA_impact  = rel_CA60_TM * (TOI / 60), 
+           xGF_impact = rel_xGF60_TM * (TOI / 60), 
+           xGA_impact = rel_xGA60_TM * (TOI / 60), 
            
-           adj_CF_impact = round(adj_rel_CF60_TM * (TOI / 60), 2),
-           adj_CA_impact = round(adj_rel_CA60_TM * (TOI / 60), 2),
-           adj_xGF_impact = round(adj_rel_xGF60_TM * (TOI / 60), 2),
-           adj_xGA_impact = round(adj_rel_xGA60_TM * (TOI / 60), 2),
+           adj_CF_impact  = adj_rel_CF60_TM * (TOI / 60), 
+           adj_CA_impact  = adj_rel_CA60_TM * (TOI / 60), 
+           adj_xGF_impact = adj_rel_xGF60_TM * (TOI / 60), 
+           adj_xGA_impact = adj_rel_xGA60_TM * (TOI / 60), 
            
-           rel_Cdiff60_TM = rel_CF60_TM - rel_CA60_TM,
-           rel_xGdiff60_TM = round(rel_xGF60_TM - rel_xGA60_TM, 3), 
+           rel_Cdiff60_TM  = rel_CF60_TM - rel_CA60_TM,
+           rel_xGdiff60_TM = rel_xGF60_TM - rel_xGA60_TM, 
            
-           adj_rel_Cdiff60_TM = adj_rel_CF60_TM - adj_rel_CA60_TM,
-           adj_rel_xGdiff60_TM = round(adj_rel_xGF60_TM - adj_rel_xGA60_TM, 3), 
+           adj_rel_Cdiff60_TM  = adj_rel_CF60_TM - adj_rel_CA60_TM,
+           adj_rel_xGdiff60_TM = adj_rel_xGF60_TM - adj_rel_xGA60_TM, 
            
-           rel_CF_TM_perc = 100 * round(CF60/(CF60 + CA60) - w_TM_CF60 / (w_TM_CF60 + w_TM_CA60) + .5, 4), 
+           rel_CF_TM_perc  = 100 * round(CF60/(CF60 + CA60) - w_TM_CF60 / (w_TM_CF60 + w_TM_CA60) + .5, 4), 
            rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - w_TM_xGF60 / (w_TM_xGF60 + w_TM_xGA60) + .5, 4), 
            
-           adj_rel_CF_TM_perc = 100 * round(CF60/(CF60 + CA60) - adj_w_TM_CF60 / (adj_w_TM_CF60 + adj_w_TM_CA60) + .5, 4), 
+           adj_rel_CF_TM_perc  = 100 * round(CF60/(CF60 + CA60) - adj_w_TM_CF60 / (adj_w_TM_CF60 + adj_w_TM_CA60) + .5, 4), 
            adj_rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - adj_w_TM_xGF60 / (adj_w_TM_xGF60 + adj_w_TM_xGA60) + .5, 4), 
            
            Corsi_total_impact = CF_impact - CA_impact,
@@ -969,25 +965,27 @@ fun.rel_teammate <- function(data, position_data, teams_data) {
            adj_Corsi_total_impact = adj_CF_impact - adj_CA_impact,
            adj_xG_total_impact = adj_xGF_impact - adj_xGA_impact
            ) %>% 
-    
     left_join(., position_data, by = c("player")) %>% 
     left_join(., teams_data, by = c("player", "season")) %>% 
     
-    select(player, position, season, Team, TOI, 
-           CF60, CA60, xGF60, xGA60, 
-           w_TM_CF60, w_TM_CA60, w_TM_xGF60, w_TM_xGA60, 
-           adj_w_TM_CF60, adj_w_TM_CA60, adj_w_TM_xGF60, adj_w_TM_xGA60, 
-           rel_CF60_TM, rel_CA60_TM, rel_xGF60_TM, rel_xGA60_TM, 
-           adj_rel_CF60_TM, adj_rel_CA60_TM, adj_rel_xGF60_TM, adj_rel_xGA60_TM, 
-           rel_Cdiff60_TM, rel_xGdiff60_TM,
-           adj_rel_Cdiff60_TM, adj_rel_xGdiff60_TM,
-           rel_CF_TM_perc, rel_xGF_TM_perc,
-           adj_rel_CF_TM_perc, adj_rel_xGF_TM_perc,
+    # Select and Round
+    select(player, position, season, Team, TOI, CF60, CA60, xGF60, xGA60, w_TM_CF60, w_TM_CA60, w_TM_xGF60, w_TM_xGA60, 
+           adj_w_TM_CF60, adj_w_TM_CA60, adj_w_TM_xGF60, adj_w_TM_xGA60, rel_CF60_TM, rel_CA60_TM, rel_xGF60_TM, rel_xGA60_TM, 
+           adj_rel_CF60_TM, adj_rel_CA60_TM, adj_rel_xGF60_TM, adj_rel_xGA60_TM, rel_Cdiff60_TM, rel_xGdiff60_TM,
+           adj_rel_Cdiff60_TM, adj_rel_xGdiff60_TM, rel_CF_TM_perc, rel_xGF_TM_perc,adj_rel_CF_TM_perc, adj_rel_xGF_TM_perc,
            CF_impact, CA_impact, xGF_impact, xGA_impact, Corsi_total_impact, xG_total_impact, 
            adj_CF_impact, adj_CA_impact, adj_xGF_impact, adj_xGA_impact, adj_Corsi_total_impact, adj_xG_total_impact
            ) %>% 
+    mutate_at(vars(w_TM_CF60, w_TM_CA60, adj_w_TM_CF60, adj_w_TM_CA60, rel_CF60_TM, rel_CA60_TM, adj_rel_CF60_TM, 
+                   adj_rel_CA60_TM, rel_Cdiff60_TM, adj_rel_Cdiff60_TM, CF_impact:adj_xG_total_impact), 
+              funs(round(., 2))
+              ) %>% 
+    mutate_at(vars(w_TM_xGF60, w_TM_xGA60, adj_w_TM_xGF60, adj_w_TM_xGA60, rel_xGF60_TM, rel_xGA60_TM, adj_rel_xGF60_TM, 
+                   adj_rel_xGA60_TM, rel_xGdiff60_TM, adj_rel_xGdiff60_TM), 
+              funs(round(., 3))
+              ) %>% 
     data.frame()
-}
+  }
 rel_TM_player <- fun.rel_teammate(rel_source_EV, player_position, teams)
 
 
@@ -995,34 +993,43 @@ rel_TM_player <- fun.rel_teammate(rel_source_EV, player_position, teams)
 fun.rel_teammate_adj <- function(data) {
   
   rel_TM_team_adj <- data %>% 
-    mutate(tm_CF_center = adj_w_TM_CF60 - mean(adj_w_TM_CF60), 
-           tm_CA_center = adj_w_TM_CA60 - mean(adj_w_TM_CA60), 
+    mutate(tm_CF_center  = adj_w_TM_CF60 - mean(adj_w_TM_CF60), 
+           tm_CA_center  = adj_w_TM_CA60 - mean(adj_w_TM_CA60), 
            tm_xGF_center = adj_w_TM_xGF60 - mean(adj_w_TM_xGF60), 
            tm_xGA_center = adj_w_TM_xGA60 - mean(adj_w_TM_xGA60), 
            
-           n_rel_CF60 = round(CF60 - (tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2), 
-           n_rel_CA60 = round(CA60 - (tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
+           n_rel_CF60  = round(CF60 - (tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2), 
+           n_rel_CA60  = round(CA60 - (tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
            n_rel_xGF60 = round(xGF60 - (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)), 3), 
-           n_rel_xGA60 = round(xGA60 - (tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3),
+           n_rel_xGA60 = round(xGA60 - (tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3), 
            
-           n_rel_CF_TM_perc = 100 * round(CF60/(CF60 + CA60) - 
-                                            (tm_CF_center*.8 + mean(adj_w_TM_CF60)) / 
-                                            ((tm_CF_center*.8 + mean(adj_w_TM_CF60)) + 
-                                               (tm_CA_center*.88 + mean(adj_w_TM_CA60))) + .5, 4), 
+           t_adj_CF60  = n_rel_CF60 - adj_rel_CF60_TM, 
+           t_adj_CA60  = n_rel_CA60 - adj_rel_CA60_TM, 
+           t_adj_xGF60 = n_rel_xGF60 - adj_rel_xGF60_TM, 
+           t_adj_xGA60 = n_rel_xGA60 - adj_rel_xGA60_TM, 
+           
+           n_rel_CF_TM_perc  = 100 * round(CF60/(CF60 + CA60) - 
+                                             (tm_CF_center*.8 + mean(adj_w_TM_CF60)) / 
+                                             ((tm_CF_center*.8 + mean(adj_w_TM_CF60)) + 
+                                                (tm_CA_center*.88 + mean(adj_w_TM_CA60))) + .5, 4), 
            n_rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - 
                                              (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) / 
                                              ((tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) + 
                                                 (tm_xGA_center*.85 + mean(adj_w_TM_xGA60))) + .5, 4), 
            
-           n_CF_impact = round(n_rel_CF60*(TOI/60), 2), 
-           n_CA_impact = round(n_rel_CA60*(TOI/60), 2), 
+           n_CF_impact  = round(n_rel_CF60*(TOI/60), 2), 
+           n_CA_impact  = round(n_rel_CA60*(TOI/60), 2), 
            n_xGF_impact = round(n_rel_xGF60*(TOI/60), 3), 
            n_xGA_impact = round(n_rel_xGA60*(TOI/60), 3), 
+           
            n_Corsi_total_impact = n_CF_impact - n_CA_impact, 
            n_xG_total_impact = n_xGF_impact - n_xGA_impact
            ) %>% 
-    select(player, position, season, Team, TOI, CF60, CA60, xGF60, xGA60, n_rel_CF60:n_xG_total_impact)
-}
+    select(player, position, season, Team, TOI, 
+           CF60, CA60, xGF60, xGA60, 
+           t_adj_CF60:t_adj_xGA60,
+           n_rel_CF60:n_xG_total_impact)
+  }
 rel_TM_player_adj <- fun.rel_teammate_adj(rel_TM_player)
 
 
