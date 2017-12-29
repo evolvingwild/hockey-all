@@ -1035,4 +1035,3 @@ fun.rel_teammate_adj <- function(data) {
   }
 rel_TM_player_adj <- fun.rel_teammate_adj(rel_TM_player)
 
-
