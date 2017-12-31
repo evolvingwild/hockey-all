@@ -2,7 +2,7 @@
 #####        Relative to Teammate       ||              12/26/17            #####
 #################################################################################
 
-# NHL pbp data scraped using Emmanuel Perry's dryscrape functions, availble here: https://github.com/mannyelk/corsica/tree/master/modules
+# NHL pbp data scraped using Emmanuel Perry's dryscrape functions, available here: https://github.com/mannyelk/corsica/tree/master/modules
 # xG model developed by Emmanuel Perry, available here: https://github.com/mannyelk/corsica/tree/master/models
 
 
