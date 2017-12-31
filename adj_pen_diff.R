@@ -74,8 +74,10 @@ penrate_GA <- fun.pen_GA()
 
 
 
-###            Adjusted Penalty Differential         ###
-########################################################
+
+## -------------------- ##
+##        Compute       ##
+## -------------------- ##
 
 # Wrangle & Sort Data
 fun.pen_setup <- function(data) {
@@ -642,18 +644,19 @@ fun.pen_value_sum <- function(main_data, xtra_data) {
     filter(first_assign != 1, team_pen != 1) %>% 
     group_by(event_player_1, game_id) %>% 
     summarise(take = sum(pen_value), 
-              adj_take = sum(ifelse(home_team == event_team, pen_value*pen_score_adj[home_lead_state, 4],  
-                                    ifelse(away_team == event_team, pen_value*pen_score_adj[home_lead_state, 5], pen_value))), 
+              adj_take = sum(ifelse(home_team == event_team, pen_value * pen_score_adj[home_lead_state, 4],  
+                                    ifelse(away_team == event_team, pen_value * pen_score_adj[home_lead_state, 5], pen_value))), 
               take_count = sum(event_type == "PENL")
               ) %>% 
     filter(!is.na(event_player_1)) %>% 
     rename(player = event_player_1)
   
-  p_main_draw <- main_data %>% filter(first_assign != 1, team_pen != 1) %>% 
+  p_main_draw <- main_data %>% 
+    filter(first_assign != 1, team_pen != 1) %>% 
     group_by(event_player_2, game_id) %>% 
     summarise(draw = sum(pen_value), 
-              adj_draw = sum(ifelse(home_team == event_team, pen_value*pen_score_adj[home_lead_state, 4],  
-                                    ifelse(away_team == event_team, pen_value*pen_score_adj[home_lead_state, 5], pen_value))), 
+              adj_draw = sum(ifelse(home_team == event_team, pen_value * pen_score_adj[home_lead_state, 4],  
+                                    ifelse(away_team == event_team, pen_value * pen_score_adj[home_lead_state, 5], pen_value))), 
               draw_count = sum(event_type == "PENL")
               ) %>%
     filter(!is.na(event_player_2)) %>% 
@@ -670,8 +673,8 @@ fun.pen_value_sum <- function(main_data, xtra_data) {
   p_xtra_take <- xtra_data %>% 
     group_by(event_player_1, game_id) %>% 
     summarise(take = sum(pen_value_take), 
-              adj_take = sum(ifelse(home_team == event_team, pen_value_take*pen_score_adj[home_lead_state, 4],  
-                                    ifelse(away_team == event_team, pen_value_take*pen_score_adj[home_lead_state, 5], pen_value_take))), 
+              adj_take = sum(ifelse(home_team == event_team, pen_value_take * pen_score_adj[home_lead_state, 4],  
+                                    ifelse(away_team == event_team, pen_value_take * pen_score_adj[home_lead_state, 5], pen_value_take))), 
               take_count = sum(event_type == "PENL")
               ) %>%
     filter(!is.na(event_player_1)) %>% 
@@ -680,8 +683,8 @@ fun.pen_value_sum <- function(main_data, xtra_data) {
   p_xtra_draw <- xtra_data %>% 
     group_by(event_player_2, game_id) %>% 
     summarise(draw = sum(pen_value_draw), 
-              adj_draw = sum(ifelse(home_team == event_team, pen_value_draw*pen_score_adj[home_lead_state, 4],  
-                                    ifelse(away_team == event_team, pen_value_draw*pen_score_adj[home_lead_state, 5], pen_value_draw))), 
+              adj_draw = sum(ifelse(home_team == event_team, pen_value_draw * pen_score_adj[home_lead_state, 4],  
+                                    ifelse(away_team == event_team, pen_value_draw * pen_score_adj[home_lead_state, 5], pen_value_draw))), 
               draw_count = sum(event_type == "PENL")
               ) %>%
     filter(!is.na(event_player_2)) %>% 
@@ -734,7 +737,9 @@ fun.pen_value_sum <- function(main_data, xtra_data) {
            adj_take = -(adj_take), 
            adj_pen_diff = adj_take + adj_draw
            ) %>% 
-    select(player, game_id, take_count, draw_count, take, draw, adj_take, adj_draw, adj_pen_diff) %>% 
+    select(player, game_id, take_count, draw_count, take, 
+           draw, adj_take, adj_draw, adj_pen_diff
+           ) %>% 
     arrange(player, game_id) %>% 
     data.frame()
   
@@ -747,12 +752,12 @@ fun.pen_team_take <- function(data) {
   
   p_team_take <- data %>% 
     filter(team_pen == 1) %>% 
-    ungroup() %>% group_by(event_team, game_id) %>% 
+    group_by(event_team, game_id) %>% 
     summarise(take_count = sum(event_type == "PENL"), 
               take = sum(pen_value), 
               adj_take = sum(ifelse(home_team == event_team, pen_value*pen_score_adj[home_lead_state, 4],  
                                     ifelse(away_team == event_team, pen_value*pen_score_adj[home_lead_state, 5], pen_value)))
-    ) %>% 
+              ) %>% 
     filter(!is.na(event_team)) %>% 
     mutate_at(vars(take:adj_take), funs(round(., 3))) %>% 
     rename(Team = event_team) %>% 
@@ -764,7 +769,22 @@ pen_team_take <- fun.pen_team_take(pen_calc_main)
 
 
 
+## -------------------- ##
+##     Extras / Sum     ##
+## -------------------- ##
 
+# Simple Sum
+player_pen <- adj_pen_diff %>% 
+  select(-c(game_id, adj_pen_diff)) %>% 
+  group_by(player) %>% 
+  summarise_all(funs(sum)) %>% 
+  mutate(count_diff = draw_count - take_count, 
+         adj_pen_diff = adj_take + adj_draw)
+
+
+
+
+## - Requires additional data - ##
 
 # Sum per Season/Team
 seasons <- games_full_EV %>% 
