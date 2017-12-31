@@ -75,9 +75,9 @@ penrate_GA <- fun.pen_GA()
 
 
 
-## -------------------- ##
-##        Compute       ##
-## -------------------- ##
+## --------------------- ##
+##        Compute        ##
+## --------------------- ##
 
 # Wrangle & Sort Data
 fun.pen_setup <- function(data) {
@@ -769,9 +769,9 @@ pen_team_take <- fun.pen_team_take(pen_calc_main)
 
 
 
-## -------------------- ##
-##     Extras / Sum     ##
-## -------------------- ##
+## ---------------------- ##
+##      Extras / Sum      ##
+## ---------------------- ##
 
 # Simple Sum
 player_pen <- adj_pen_diff %>% 
