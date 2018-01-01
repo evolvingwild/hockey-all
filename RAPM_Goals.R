@@ -2,14 +2,7 @@
 #####         Adjusted Plus/Minus - Goals         ||         01/01/18       #####
 #################################################################################
 
-setwd("~/Documents/RStudio/stats")
-
-require(ggplot2); require(glmnet); require(caret); require(tidyr)
-require(ggjoy); require(doMC)
-#require(ridge); require(car); require(caret); 
-#require(reshape2)
-require(tibble); require(stringr)
-require(dplyr)
+library(glmnet); library(doMC); library(dplyr)
 
 options(scipen = 999)
 
@@ -61,12 +54,7 @@ c("5vE", "Ev5", "4vE", "Ev4", "3vE", "Ev3") %>% as.factor() -> st.empty_net
 ##          Setup           ##
 ## ------------------------ ##
 
-# F = 4.31 min/GP  //  D = 5.25 min /GP  //  G = 6600
-# F = 3387 / D = 4126
-# F = 354 min // D = 431 // G = (12 * 45min) = 540
-# 10-year Cuttoff: ~1450 Skaters // ~160 Goalies
-
-# New Cutoff
+# Cutoff
 # F = 1127 min // D = 1372 min
 # G = 2865 min, which is (1127 / 354) * 900 (which is 20 * 45min)
 # 10-year Cutoff: ~1184 skaters // ~100 goalies (680 forwards / 386 defensemen / 116 goalies)
