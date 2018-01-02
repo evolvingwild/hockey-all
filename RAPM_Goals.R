@@ -349,11 +349,11 @@ fun.APMsparse_GF <- function(data) {
   
   # Determine Columns
   tmp <- lapply(groups_o, function(x, test.H)  which(test.H[, "home_on_1"] == x | 
-                                                       test.H[, "home_on_2"] == x |
-                                                       test.H[, "home_on_3"] == x |
-                                                       test.H[, "home_on_4"] == x |
-                                                       test.H[, "home_on_5"] == x |
-                                                       test.H[, "home_on_6"] == x), test.H = test.H)
+                                                     test.H[, "home_on_2"] == x |
+                                                     test.H[, "home_on_3"] == x |
+                                                     test.H[, "home_on_4"] == x |
+                                                     test.H[, "home_on_5"] == x |
+                                                     test.H[, "home_on_6"] == x), test.H = test.H)
   # Make Dummy Variables
   j = rep(seq_along(tmp), lengths(tmp))
   i = unlist(tmp)
@@ -368,11 +368,11 @@ fun.APMsparse_GF <- function(data) {
   
   # Determine Columns
   tmp <- lapply(groups_d, function(x, test.H)  which((test.H[, "away_on_1"] == x | 
-                                                        test.H[, "away_on_2"] == x |
-                                                        test.H[, "away_on_3"] == x |
-                                                        test.H[, "away_on_4"] == x |
-                                                        test.H[, "away_on_5"] == x |
-                                                        test.H[, "away_on_6"] == x) & test.H[, "home_goalie"] != x), test.H = test.H)
+                                                      test.H[, "away_on_2"] == x |
+                                                      test.H[, "away_on_3"] == x |
+                                                      test.H[, "away_on_4"] == x |
+                                                      test.H[, "away_on_5"] == x |
+                                                      test.H[, "away_on_6"] == x) & test.H[, "home_goalie"] != x), test.H = test.H)
   # Make Dummy Variables
   j = rep(seq_along(tmp), lengths(tmp))
   i = unlist(tmp)
@@ -423,11 +423,11 @@ fun.APMsparse_GF <- function(data) {
   
   # Determine Columns
   tmp <- lapply(groups_o, function(x, test.A)  which(test.A[, "away_on_1"] == x | 
-                                                       test.A[, "away_on_2"] == x |
-                                                       test.A[, "away_on_3"] == x |
-                                                       test.A[, "away_on_4"] == x |
-                                                       test.A[, "away_on_5"] == x |
-                                                       test.A[, "away_on_6"] == x), test.A = test.A)
+                                                     test.A[, "away_on_2"] == x |
+                                                     test.A[, "away_on_3"] == x |
+                                                     test.A[, "away_on_4"] == x |
+                                                     test.A[, "away_on_5"] == x |
+                                                     test.A[, "away_on_6"] == x), test.A = test.A)
   # Make Dummy Variables
   j = rep(seq_along(tmp), lengths(tmp))
   i = unlist(tmp)
@@ -440,11 +440,11 @@ fun.APMsparse_GF <- function(data) {
   print("away_defense")
   # Determine Columns
   tmp <- lapply(groups_d, function(x, test.A)  which((test.A[, "home_on_1"] == x | 
-                                                        test.A[, "home_on_2"] == x |
-                                                        test.A[, "home_on_3"] == x |
-                                                        test.A[, "home_on_4"] == x |
-                                                        test.A[, "home_on_5"] == x |
-                                                        test.A[, "home_on_6"] == x) & test.A[, "away_goalie"] != x), test.A = test.A)
+                                                      test.A[, "home_on_2"] == x |
+                                                      test.A[, "home_on_3"] == x |
+                                                      test.A[, "home_on_4"] == x |
+                                                      test.A[, "home_on_5"] == x |
+                                                      test.A[, "home_on_6"] == x) & test.A[, "away_goalie"] != x), test.A = test.A)
   # Make Dummy Variables
   j = rep(seq_along(tmp), lengths(tmp))
   i = unlist(tmp)
