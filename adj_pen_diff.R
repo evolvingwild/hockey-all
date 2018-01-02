@@ -106,7 +106,7 @@ fun.pen_setup <- function(data) {
            !(grepl("fighting", tolower(event_description))), 
            !(grepl("misconduct", tolower(event_description)))
            ) %>% 
-    mutate(# probably a better way to do this
+    mutate(# Add last penalty time for cluster penalties (probably a better way to do this)
            last_pen_time = ifelse(last_pen_time == 0, lag(last_pen_time), last_pen_time), 
            last_pen_time = ifelse(last_pen_time == 0, lag(last_pen_time), last_pen_time), 
            last_pen_time = ifelse(last_pen_time == 0, lag(last_pen_time), last_pen_time), 
@@ -128,7 +128,7 @@ fun.pen_setup <- function(data) {
            double = ifelse((grepl("double minor", tolower(event_description)) == TRUE) == 1, 1, 0), 
            team_pen = ifelse((grepl("bench", tolower(event_description)) == TRUE) == 1, 1, 0), 
            
-           # probably a better way to do this
+           # Add next strength state for cluster penalties (probably a better way to do this)
            next_st_state2  = ifelse(next_st_state1  == 0 & game_seconds == lead(game_seconds), lead(next_st_state1),  next_st_state1), 
            next_st_state3  = ifelse(next_st_state2  == 0 & game_seconds == lead(game_seconds), lead(next_st_state2),  next_st_state2), 
            next_st_state4  = ifelse(next_st_state3  == 0 & game_seconds == lead(game_seconds), lead(next_st_state3),  next_st_state3), 
@@ -144,8 +144,7 @@ fun.pen_setup <- function(data) {
            next_st_state14 = ifelse(next_st_state13 == 0 & game_seconds == lead(game_seconds), lead(next_st_state13), next_st_state13), 
            next_st_state15 = ifelse(next_st_state14 == 0 & game_seconds == lead(game_seconds), lead(next_st_state14), next_st_state14), 
            
-           no_impact = ifelse((game_strength_state %in% c("5v5", "4v4", "3v3") & 
-                                 next_st_state15 %in% c("5v5", "4v4", "3v3")) | 
+           no_impact = ifelse((game_strength_state %in% c("5v5", "4v4", "3v3") & next_st_state15 %in% c("5v5", "4v4", "3v3")) | 
                                 (game_strength_state == next_st_state15 & 
                                    (game_strength_state != "5v3" & game_strength_state != "3v5" & 
                                       game_strength_state != "Ev3" & game_strength_state != "3vE")) |
@@ -157,10 +156,11 @@ fun.pen_setup <- function(data) {
            
            # Correct simultaneous minors
            cluster = ifelse(cluster == 1 & 
+                              # 5v5
                               (((game_strength_state == "5v5" & next_st_state15 %in% c("5v3", "3v5")) | 
                                  (game_strength_state == "5vE" & next_st_state15 == "3v5") | 
                                  (game_strength_state == "Ev5" & next_st_state15 == "5v3")) | 
-                                 
+                              # Powerplay
                                  (game_strength_state == "5v4" & next_st_state15 == "3v4") | 
                                  (game_strength_state == "4v5" & next_st_state15 == "4v3")), 
                             0, cluster)
@@ -178,7 +178,7 @@ fun.pen_setup <- function(data) {
 }
 pen_source <- fun.pen_setup(pbp_1718x)
 
-# Assignments
+# Assignments - initial
 fun.pen_assign <- function(data) {
   
   # Initial gather
@@ -237,7 +237,8 @@ fun.pen_assign <- function(data) {
   # Remove further offsetting penalties
   test2d <- test2c %>% 
     filter(offset == 1) %>% 
-    select(pen_id, offset) %>% group_by(pen_id) %>% 
+    select(pen_id, offset) %>% 
+    group_by(pen_id) %>% 
     summarise(offset = first(offset))  
   
   # Assign
@@ -255,7 +256,7 @@ fun.pen_assign <- function(data) {
     rename(take_assign = least, 
            draw_assign = most)
   
-  # Correct strange double minors
+  # Final determination
   test4 <- test1 %>% 
     left_join(., test3a, by = c("pen_id")) %>% 
     group_by(pen_id) %>% 
