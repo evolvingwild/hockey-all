@@ -8,26 +8,26 @@ options(scipen = 999)
 
 set.seed(123)
 
+# NHL pbp data scraped using Emmanuel Perry's dryscrape functions, available here: 
+# https://github.com/mannyelk/corsica/tree/master/modules
+
+
+# Required Data:
+# - pbp data referenced above
+# - skater game-by-game TOI data
+# - skater position data: https://github.com/evolvingwild/hockey-all/blob/master/skater_position.rds
+# - list of games with no x/y coordinates (to remove from pbp data if needed)
+# - full NHL schedule to determine back-to-back
+
 
 ## Load Extra Data
 #######################################
-fun.position <- function() {
-  
-  player_position <- read.csv("player_position.csv", stringsAsFactors = FALSE)
-  pos_upd <- data.frame(matrix(nrow = 2, ncol = 2))
-  names(pos_upd) <- c("player", "position")
-  pos_upd[1, 1] <- c("FRÉDÉRIC.ST-DENIS") 
-  pos_upd[1, 2] <- 1
-  pos_upd[2, 1] <- c("MICHAËL.BOURNIVAL")
-  pos_upd[2, 2] <- 1
-  player_position <- player_position %>% rbind(., pos_upd) %>% arrange(player)
-  
-  return(player_position)
-}
-player_position <- fun.position()
-scoreadj <- read.csv("ScoreAdj.csv")
+
+player_position <- readRDS("skater_position.rds")
 no_xg <- readRDS("no_xg.rds")
 schedule_full <- readRDS("team_results_with1617_pl.rds")
+
+ # Modify
 schedule_full <- schedule_full %>% 
   filter(game_id <= 2016021230)
 
@@ -54,14 +54,15 @@ c("5vE", "Ev5", "4vE", "Ev4", "3vE", "Ev3") %>% as.factor() -> st.empty_net
 ##          Setup           ##
 ## ------------------------ ##
 
-# Cutoff
-# F = 1127 min // D = 1372 min
-# G = 2865 min, which is (1127 / 354) * 900 (which is 20 * 45min)
-# 10-year Cutoff: ~1184 skaters // ~100 goalies (680 forwards / 386 defensemen / 116 goalies)
-# 3-year Cutoff: F = 338.1 // D = 411.6
+# Cutoff - originally determined here: https://arxiv.org/pdf/1201.0317.pdf, now adjusted for position
+# 10-year: F = 1127 min // D = 1372 min
+# G = 2865 min, which is (1127 / 354) * 900 (which is 20 games at 45 minutes)
+#
+# 10-year Cutoff: ~1182 skaters (~680 forwards / ~386 defensemen / ~116 goalies)
+# 3-year initial Cutoff: F = 338.1 // D = 411.6 (one qualified season)
 
 
-# Goalie Qualifying
+# Qualify goalies
 fun.goalie_qual <- function(data, cutoff) {
   
   hold <- data %>% 
@@ -86,10 +87,12 @@ fun.goalie_qual <- function(data, cutoff) {
     mutate(qual = ifelse(TOI > cutoff, 1, 0)) %>% 
     select(player, qual)
 }
-goalie_qual <- fun.goalie_qual(pbp_full, 900)
+goalie_qual <- fun.goalie_qual(pbp_full, 
+                               900) # 3 year qualifying (initial)
+                               #2865) # 10 year qualifying
 
 
-# Find qualified players from games data - USE FOR GOALS REGRESSION
+# Qualify skaters + add qualified goalies
 fun.qualified_GF <- function(data, goalie_data, f_cut, d_cut) {
   
   qualified <- data %>% 
@@ -109,18 +112,18 @@ fun.qualified_GF <- function(data, goalie_data, f_cut, d_cut) {
 }
 Qualified_GF <- fun.qualified_GF(games_full_EV, 
                                  goalie_qual, 
-                                 #338.1, 411.6) # 3 year qualifying
+                                 #338.1, 411.6) # 3 year qualifying (initial)
                                  1127, 1372) # 10 year qualifying
 rm(goalie_qual)
 
 
-# Remove no_xG from pbp_full
+# Remove games with no x/y coordinates (if needed)
 v <- unique(pbp_full$game_id)
 include <- v[!v %in% no_xg]
 pbp_full <- pbp_full %>% filter(game_id %in% include)
 
 
-# Prepare pbp (initial) - filter to EV, column select + join in btb
+# Prepare pbp (initial) - filter to EV, select columns, join back-to-back data
 fun.pbp_prepare <- function(data) {
   
   pbp_part <- data %>% 
@@ -129,13 +132,13 @@ fun.pbp_prepare <- function(data) {
            event_type != "CHL", event_type != "GOFF", event_type != "EIEND", 
            event_type != "EISTR", event_type != "PENL", 
            game_period < 5
-    ) %>% 
+           ) %>% 
     mutate(scradj = home_score - away_score, 
            home_lead = ifelse(scradj >= 3, 3, ifelse(scradj <= -3, -3, scradj)), 
            event_length = ifelse(is.na(event_length), 0, event_length), 
            event_team = ifelse(is.na(event_team), 0, event_team), 
            home_zonestart = ifelse(is.na(home_zonestart), 0, home_zonestart)
-    )
+           )
   
   pbp_part <- pbp_part %>% 
     select(game_id, 
@@ -148,7 +151,7 @@ fun.pbp_prepare <- function(data) {
            home_lead, 
            home_zonestart, 
            prob_goal
-    )
+           )
   
   pbp_part <- left_join(pbp_part, btb, by = c("game_id"))
   
@@ -250,7 +253,7 @@ st.goal_ID <- names_match[which(names_match[, 1] %in% c("GOAL")), 3]
 st.fac_ID <- names_match[which(names_match[, 1] %in% c("FAC")), 3]
 
 
-# Convert prepared pbp data frame to all numeric values
+# Convert prepared pbp data frame to numeric values
 fun.IDs <- function(data) {
   
   # Home Players
@@ -297,7 +300,7 @@ gc()
 ##    Create APM Tables     ##
 ## ------------------------ ##
 
-# GF60 - Vectorized!
+# GF60 - create APM sparse matrix  
 fun.APMsparse_GF <- function(data) {
   
   ### Create Home Matrix
@@ -476,12 +479,12 @@ APM <- fun.APMsparse_GF(pbp_part)
 ##          Models          ##
 ## ------------------------ ##
 
-# Cleanup
+# Cleanup / separate target, weights, and predictors
 GF60_l <- list(APM[, 19])
 length_l <- list(APM[, 18])
 
-length <- unlist(rapply(length_l, f = function(x) ifelse(x == 0, 1, x), how = "replace"))
-GF60 <- unlist(rapply(GF60_l, f = function(x) ifelse(is.nan(x), 1, x), how = "replace"))
+length <- unlist(rapply(length_l, f = function(x) ifelse(x == 0, 1, x), how = "replace")) # correct length of 0
+GF60 <- unlist(rapply(GF60_l, f = function(x) ifelse(is.nan(x), 1, x), how = "replace")) # correct NANs
 
 APM_g <- APM[, -c(1:13, 15:19)]
 
@@ -510,14 +513,14 @@ ridge <- glmnet(APM_g,
 
 
 ## ------------------------ ##
-##      Retrieve Names      ##
+##           Output         ##
 ## ------------------------ ##
 
-fun.APM_bind <- function(model_data, names_data) {
+fun.APM_bind <- function(model_data, names_data, lambda_value) {
   
   # Retrieve Coefficients
-  APM <- data.frame(as.matrix(coef(model_data, s = lambda_min)))
-  APM_names <- dimnames(coef(ridge))[[1]]
+  APM <- data.frame(as.matrix(coef(model_data, s = lambda_value)))
+  APM_names <- dimnames(coef(model_data))[[1]]
   APM_test <- cbind(APM_names, APM)
   
   # Remove .d / .o suffixes
@@ -541,13 +544,13 @@ fun.APM_bind <- function(model_data, names_data) {
   
   return(APM_all)
 }
-APM_initial <- fun.APM_bind(ridge, names_match)
+APM_initial <- fun.APM_bind(ridge, names_match, lambda_min)
 
 APM <- APM_initial %>% 
   rename(player = APM_names) %>% 
   left_join(., names_match, by = c("player"))
 
-TOI_full <- games_full_EV %>% 
+TOI_full <- games_full_EV %>% # skater game-by-game TOI data
   group_by(player) %>% 
   mutate(n = n()) %>% 
   summarise(TOI = sum(TOI), 
