@@ -1,5 +1,5 @@
 #####################################################################################
-#####     Adjusted Penalty Differential    ||             07/10/17              #####
+#####     Adjusted Penalty Differential    ||             01/02/18              #####
 #####################################################################################
 
 library(tidyr); library(dplyr)
@@ -83,19 +83,6 @@ penrate_GA <- fun.pen_GA()
 fun.pen_setup <- function(data) {
   
   # Determine next strength state
-  
-  #pbp_part <- data %>% 
-  #  filter(event_type %in% c("PENL", "FAC"), 
-  #         !(grepl("misconduct", tolower(event_description))), 
-  #         !(grepl("fighting", tolower(event_description)))
-  #         ) %>% 
-  #  #group_by(season, game_id) %>% 
-  #  mutate(next_st_state1 = ifelse(event_type == "PENL" & lead(event_type) == "FAC" & game_id == lead(game_id), lead(game_strength_state), 0)) %>% 
-  #  select(game_id:game_period, game_strength_state, game_seconds:event_detail, next_st_state1) %>% 
-  #  filter(event_type == "PENL") %>% 
-  #  mutate(last_pen_time = ifelse(lag(game_seconds) != game_seconds & lag(game_id) == game_id, lag(game_seconds), 0)) %>%
-  #  select(game_id, event_index, last_pen_time, next_st_state1)
-  
   pbp_part <- data %>% 
     filter(event_type %in% c("PENL", "FAC"), 
            !(grepl("misconduct", tolower(event_description))), 
@@ -780,6 +767,9 @@ player_pen <- adj_pen_diff %>%
   summarise_all(funs(sum)) %>% 
   mutate(count_diff = draw_count - take_count, 
          adj_pen_diff = adj_take + adj_draw)
+
+
+
 
 
 
