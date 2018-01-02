@@ -5,7 +5,6 @@
 # NHL pbp data scraped using Emmanuel Perry's dryscrape functions, available here: https://github.com/mannyelk/corsica/tree/master/modules
 # xG model developed by Emmanuel Perry, available here: https://github.com/mannyelk/corsica/tree/master/models
 
-
 library(dplyr)
 
 options(scipen = 999)
