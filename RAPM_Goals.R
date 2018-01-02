@@ -22,7 +22,6 @@ set.seed(123)
 
 ## Load Extra Data
 #######################################
-
 player_position <- readRDS("skater_position.rds")
 no_xg <- readRDS("no_xg.rds")
 schedule_full <- readRDS("team_results_with1617_pl.rds")
@@ -475,7 +474,7 @@ APM <- fun.APMsparse_GF(pbp_part)
 
 
 ## ------------------------ ##
-##          Models          ##
+##          Model           ##
 ## ------------------------ ##
 
 # Cleanup / separate target, weights, and predictors
@@ -512,7 +511,7 @@ ridge <- glmnet(APM_g,
 
 
 ## ------------------------ ##
-##           Output         ##
+##          Output          ##
 ## ------------------------ ##
 
 fun.APM_bind <- function(model_data, names_data, lambda_value) {
