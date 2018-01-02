@@ -110,16 +110,15 @@ fun.qualified_GF <- function(data, goalie_data, f_cut, d_cut) {
   
   return(qualified_return)
 }
-Qualified_GF <- fun.qualified_GF(games_full_EV, 
+Qualified_GF <- fun.qualified_GF(games_full_EV, # skater game-by-game TOI data
                                  goalie_qual, 
                                  #338.1, 411.6) # 3 year qualifying (initial)
                                  1127, 1372) # 10 year qualifying
 rm(goalie_qual)
 
-
 # Remove games with no x/y coordinates (if needed)
 v <- unique(pbp_full$game_id)
-include <- v[!v %in% no_xg]
+include <- v[!v %in% no_xg] # no_xG data
 pbp_full <- pbp_full %>% filter(game_id %in% include)
 
 
@@ -164,12 +163,11 @@ pbp_part <- fun.pbp_prepare(pbp_full)
 rm(pbp_full)
 gc()
 
-
 # Create data frame with all players, goalies, teams, and event_types and their respective IDs
-fun.names_match <- function(sub_data2, qual_data) {
+fun.names_match <- function(sub_data2, qual_data, player_data) {
   
   # Skaters
-  player_position <- player_position %>% 
+  player_position <- player_data %>% 
     mutate(ID = row_number() + 10000)
   
   # Goalies
@@ -235,14 +233,15 @@ fun.names_match <- function(sub_data2, qual_data) {
   
   return(all)
 }
-names_match <- fun.names_match(pbp_part, Qualified_GF)
+names_match <- fun.names_match(pbp_part, 
+                               Qualified_GF, 
+                               player_position)
 
 
 # Determine non-qualified players
 exclude <- names_match %>% 
   filter(ID > 10000, qual == 0) %>% 
   select(ID)
-
 exclude <- as.vector(exclude[, 1])
 
 
