@@ -3,12 +3,12 @@
 #################################################################################
 
 # NHL pbp data scraped using Emmanuel Perry's dryscrape functions, available here: https://github.com/mannyelk/corsica/tree/master/modules
-# xG model developed by Emmanuel Perry, available here: https://github.com/mannyelk/corsica/tree/master/models
 
 library(dplyr)
 
 options(scipen = 999)
 
+pbp_df <- pbp_df %>% rename(prob_goal = pred_XGB_7)
 
 # Create Score Adjust Data Frame / xG adjustment
 scoreadj_corsi <- data.frame(matrix(nrow = 7, ncol = 3))
@@ -109,6 +109,7 @@ fun.onice_combine <- function(data, year) {
            event_length = ifelse(is.na(event_length), 0, event_length)
            )
   
+  print("home_skaters", quote = F)
   h1 <- hold %>% 
     group_by(game_id, home_on_1, home_team) %>% 
     fun.onice_H(., "home_on_1") %>% 
@@ -139,6 +140,7 @@ fun.onice_combine <- function(data, year) {
     fun.onice_H(., "home_on_6") %>% 
     rename(player = home_on_6)
   
+  print("away_skaters", quote = F)
   a1 <-  hold %>% 
     group_by(game_id, away_on_1, away_team) %>% 
     fun.onice_A(., "away_on_1") %>% 
@@ -201,7 +203,7 @@ fun.onice_combine <- function(data, year) {
   return(join_return)
 }
 
-on_ice_EV <- fun.onice_combine(pbp_data, "20172018")
+on_ice_EV <- fun.onice_combine(pbp_df, "20172018")
 
 
 ## ------------------------------------------------- ##
@@ -212,7 +214,7 @@ on_ice_EV <- fun.onice_combine(pbp_data, "20172018")
 fun.QoT_H <- function(data) {
   
   hold_player <- data %>% 
-    summarise(Team = first(away_team), 
+    summarise(Team = first(home_team), 
               TOI = sum(event_length) / 60,
               GF = sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
               GA = sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
@@ -695,7 +697,10 @@ fun.teammate <- function(data, year) {
   
   # Filter pbp data
   hold <- data %>% 
-    filter(game_strength_state %in% st.even_strength, game_period < 5, event_length < 900) %>% 
+    filter(game_strength_state %in% st.even_strength, 
+           game_period < 5, 
+           event_length < 900
+           ) %>% 
     mutate(scradj = home_score - away_score, 
            home_lead = ifelse(scradj >= 3, 3, ifelse(scradj <= -3, -3, scradj)),
            home_lead = home_lead + 4, 
@@ -777,7 +782,22 @@ fun.teammate <- function(data, year) {
 
   return(ALL)
 }
-rel_TM_combos_EV <- fun.teammate(pbp_data, "20172018")
+rel_TM_combos_EV <- fun.teammate(pbp_df, "20172018")
+
+
+# In season - add
+max(pbp_df$game_id)
+max_game <- max(rel_combo$game_id)
+max_game
+
+new_pbp <- pbp_df %>% 
+  filter(game_id > max_game)
+
+rel_TM_new_EV <- fun.teammate(new_pbp, "20172018")
+
+rel_TM_combos_EV <- rel_combo %>% 
+  rbind(., rel_TM_new_EV) %>% 
+  arrange(player, teammate, game_id)
 
 
 ## --------------------- ##
@@ -960,11 +980,11 @@ fun.rel_teammate <- function(data, position_data, teams_data) {
            adj_rel_Cdiff60_TM  = adj_rel_CF60_TM - adj_rel_CA60_TM,
            adj_rel_xGdiff60_TM = adj_rel_xGF60_TM - adj_rel_xGA60_TM, 
            
-           rel_CF_TM_perc  = 100 * round(CF60/(CF60 + CA60) - w_TM_CF60 / (w_TM_CF60 + w_TM_CA60) + .5, 4), 
-           rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - w_TM_xGF60 / (w_TM_xGF60 + w_TM_xGA60) + .5, 4), 
+           rel_CF_TM_perc  = 100 * round(CF60 / (CF60 + CA60) - w_TM_CF60 / (w_TM_CF60 + w_TM_CA60) + .5, 4), 
+           rel_xGF_TM_perc = 100 * round(xGF60 / (xGF60 + xGA60) - w_TM_xGF60 / (w_TM_xGF60 + w_TM_xGA60) + .5, 4), 
            
-           adj_rel_CF_TM_perc  = 100 * round(CF60/(CF60 + CA60) - adj_w_TM_CF60 / (adj_w_TM_CF60 + adj_w_TM_CA60) + .5, 4), 
-           adj_rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - adj_w_TM_xGF60 / (adj_w_TM_xGF60 + adj_w_TM_xGA60) + .5, 4), 
+           adj_rel_CF_TM_perc  = 100 * round(CF60 / (CF60 + CA60) - adj_w_TM_CF60 / (adj_w_TM_CF60 + adj_w_TM_CA60) + .5, 4), 
+           adj_rel_xGF_TM_perc = 100 * round(xGF60 / (xGF60 + xGA60) - adj_w_TM_xGF60 / (adj_w_TM_xGF60 + adj_w_TM_xGA60) + .5, 4), 
            
            Corsi_total_impact = CF_impact - CA_impact,
            xG_total_impact = xGF_impact - xGA_impact, 
@@ -1016,13 +1036,10 @@ fun.rel_teammate_adj <- function(data) {
            t_adj_xGA60 = n_rel_xGA60 - adj_rel_xGA60_TM, 
            
            n_rel_CF_TM_perc  = 100 * round(CF60/(CF60 + CA60) - 
-                                             (tm_CF_center*.8 + mean(adj_w_TM_CF60)) / 
-                                             ((tm_CF_center*.8 + mean(adj_w_TM_CF60)) + 
-                                                (tm_CA_center*.88 + mean(adj_w_TM_CA60))) + .5, 4), 
+                                             (tm_CF_center*.8 + mean(adj_w_TM_CF60)) / ((tm_CF_center*.8 + mean(adj_w_TM_CF60)) + (tm_CA_center*.88 + mean(adj_w_TM_CA60))) + .5, 4), 
+           
            n_rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - 
-                                             (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) / 
-                                             ((tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) + 
-                                                (tm_xGA_center*.85 + mean(adj_w_TM_xGA60))) + .5, 4), 
+                                             (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) / ((tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) + (tm_xGA_center*.85 + mean(adj_w_TM_xGA60))) + .5, 4), 
            
            n_CF_impact  = round(n_rel_CF60*(TOI/60), 2), 
            n_CA_impact  = round(n_rel_CA60*(TOI/60), 2), 
@@ -1038,6 +1055,24 @@ fun.rel_teammate_adj <- function(data) {
            n_rel_CF60:n_xG_total_impact)
   }
 rel_TM_player_adj <- fun.rel_teammate_adj(rel_TM_player)
+
+
+# Quick qualifying
+rel_TM_qual <- rel_TM_player_adj %>% 
+  group_by(position) %>% 
+  arrange(desc(TOI)) %>% 
+  mutate(n = row_number(), 
+         qual = ifelse(position == 1 & n <= 390, 1, 
+                       ifelse(position == 2 & n <= 210, 1, 0))
+         ) %>% 
+  filter(qual == 1) %>% 
+  select(-c(qual, n))
+
+
+
+
+
+
 
 
 
