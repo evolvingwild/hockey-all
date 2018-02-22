@@ -8,20 +8,21 @@ library(dplyr)
 
 options(scipen = 999)
 
-pbp_df <- pbp_df %>% rename(prob_goal = pred_XGB_7)
-
 # Create Score Adjust Data Frame / xG adjustment
 scoreadj_corsi <- data.frame(matrix(nrow = 7, ncol = 3))
+
 scoreadj_corsi[, 1] <- c(1, 2, 3, 4, 5, 6, 7)
 scoreadj_corsi[, 2] <- c(0.840, 0.865, 0.898, 0.970, 1.052, 1.104, 1.138)
 scoreadj_corsi[, 3] <- c(1.236, 1.186, 1.128, 1.032, 0.953, 0.914, 0.892)
+
 colnames(scoreadj_corsi) <- c("home_lead", "home_corsi_adj", "away_corsi_adj")
 
+# xG Venue Adjustment Values
 xG_adj_h <- 0.9468472
 xG_adj_a <- 1.059477
 
 # Skater Positions
-player_position <- readRDS("skater_position.rds")
+player_position <- readRDS("skater_position.rds") # available here: https://github.com/evolvingwild/hockey-all/blob/master/skater_position.rds
 
 ## Objects
 st.fenwick_events <- c("SHOT", "GOAL", "MISS")
@@ -36,20 +37,9 @@ def_d_cut <- 100
 # Functions
 fun.goalie_find <- function(data) {
   
-  # Identifies goalies within a given pbp df 
-  goalie_h <- data.frame(unique(data$home_goalie))
-  names(goalie_h) <- c("goalie")
-  
-  goalie_a <- data.frame(unique(data$away_goalie))
-  names(goalie_a) <- c("goalie")
-  
-  goalie_all <- rbind(goalie_h, goalie_a)
-  goalie_all <- data.frame(unique(goalie_all$goalie))
-  names(goalie_all) <- c("player")
-  
-  goalie_return <- goalie_all %>% 
-    filter(!is.na(player)) %>% 
-    mutate(is_goalie = 1)
+  # Identifies goalies within a given pbp data.frame & returns a data.frame to join for removal
+  goalie_return <- data.frame(player = sort(unique(na.omit(as.character(rbind(data$home_goalie, data$away_goalie))))), 
+                              is_goalie = 1)
   
   goalie_return$player <- as.character(goalie_return$player)
   
@@ -203,7 +193,8 @@ fun.onice_combine <- function(data, year) {
   return(join_return)
 }
 
-on_ice_EV <- fun.onice_combine(pbp_df, "20172018")
+on_ice_EV <- fun.onice_combine(data = pbp_df, 
+                               year = "20172018")
 
 
 ## ------------------------------------------------- ##
@@ -782,7 +773,8 @@ fun.teammate <- function(data, year) {
 
   return(ALL)
 }
-rel_TM_combos_EV <- fun.teammate(pbp_df, "20172018")
+rel_TM_combos_EV <- fun.teammate(data = pbp_df, 
+                                 year = "20172018")
 
 
 
@@ -794,7 +786,6 @@ rel_TM_combos_EV <- fun.teammate(pbp_df, "20172018")
 teams <- on_ice_EV %>% 
   group_by(player, Team, season) %>% 
   summarise(TOI = sum(TOI)) %>% 
-  ungroup() %>% 
   group_by(player, season) %>% 
   mutate(Team = paste0(Team, collapse = "/")) %>% 
   summarise(Team = first(Team))
@@ -905,7 +896,10 @@ fun.rel_source <- function(TM_data, games_data, position_data, year) {
   
   return(rel_TM_metrics)
 }
-rel_source_EV <- fun.rel_source(rel_TM_combos_EV, on_ice_EV, player_position, "20172018")
+rel_source_EV <- fun.rel_source(TM_data = rel_TM_combos_EV, 
+                                games_data = on_ice_EV, 
+                                position_data = player_position, 
+                                year = "20172018")
 
 
 # Relative to Teammate - Initial & TOI Adjust
@@ -999,7 +993,9 @@ fun.rel_teammate <- function(data, position_data, teams_data) {
               ) %>% 
     data.frame()
   }
-rel_TM_player <- fun.rel_teammate(rel_source_EV, player_position, teams)
+rel_TM_player <- fun.rel_teammate(data = rel_source_EV, 
+                                  position_data = player_position, 
+                                  teams_data = teams)
 
 
 # Relative to Teammate - Team Adjust
@@ -1040,7 +1036,7 @@ fun.rel_teammate_adj <- function(data) {
            t_adj_CF60:t_adj_xGA60,
            n_rel_CF60:n_xG_total_impact)
   }
-rel_TM_player_adj <- fun.rel_teammate_adj(rel_TM_player)
+rel_TM_player_adj <- fun.rel_teammate_adj(data = rel_TM_player)
 
 
 # Quick qualifying
@@ -1048,18 +1044,10 @@ rel_TM_qual <- rel_TM_player_adj %>%
   group_by(position) %>% 
   arrange(desc(TOI)) %>% 
   mutate(n = row_number(), 
-         qual = ifelse(position == 1 & n <= 390, 1, 
-                       ifelse(position == 2 & n <= 210, 1, 0))
+         qual = 1 * ((position == 1 & n <= 390) | (position == 2 & n <= 210))
          ) %>% 
   filter(qual == 1) %>% 
   select(-c(qual, n))
-
-
-
-
-
-
-
 
 
 
