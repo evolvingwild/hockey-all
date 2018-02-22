@@ -2,7 +2,8 @@
 #####        Relative to Teammate       ||              12/26/17            #####
 #################################################################################
 
-# NHL pbp data scraped using Emmanuel Perry's dryscrape functions. Code available here: https://github.com/mannyelk/corsica/tree/master/modules
+# NHL pbp data scraped using Emmanuel Perry's dryscrape functions. 
+# Code available here: https://github.com/mannyelk/corsica/tree/master/modules
 
 # If xG model is not available: 
 # add column entitled "pred_goal" to pbp data.frame, populate it with "1" for each observation, and ignore the xG figures
