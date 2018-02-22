@@ -47,6 +47,7 @@ fun.goalie_find <- function(data) {
 }
 rel_adj <- function(t_metric_wo, t_toi_wo, t_metric, cut, perc) {
   
+  # Low TOI adjustment for various metrics
   x <- ((t_metric_wo * (t_toi_wo^2 / cut^2)) + t_metric * (1 - (t_toi_wo^2 / cut^2))) * perc
   
   return(as.numeric(x))
@@ -63,10 +64,10 @@ fun.onice_H <- function(data, venue) {
   on_ice <- data %>% 
     summarise(Team = first(home_team), 
               TOI = sum(event_length) / 60,
-              GF = sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
-              GA = sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)),
-              CF = sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
-              CA = sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
+              GF =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
+              GA =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)),
+              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
+              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
               xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0))),
               xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0)))
               )
@@ -78,10 +79,10 @@ fun.onice_A <- function(data, venue) {
   on_ice <- data %>% 
     summarise(Team = first(away_team), 
               TOI = sum(event_length) / 60,
-              GF = sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
-              GA = sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
-              CF = sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
-              CA = sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
+              GF =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
+              GA =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
+              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
+              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
               xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0))),
               xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0)))
               )
@@ -129,6 +130,7 @@ fun.onice_combine <- function(data, year) {
     group_by(game_id, home_on_6, home_team) %>% 
     fun.onice_H(., "home_on_6") %>% 
     rename(player = home_on_6)
+  
   
   print("away_skaters", quote = F)
   a1 <-  hold %>% 
@@ -207,10 +209,10 @@ fun.QoT_H <- function(data) {
   hold_player <- data %>% 
     summarise(Team = first(home_team), 
               TOI = sum(event_length) / 60,
-              GF = sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
-              GA = sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
-              CF = sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
-              CA = sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
+              GF =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
+              GA =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
+              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
+              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
               xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0))),
               xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0)))
               )
@@ -222,10 +224,10 @@ fun.QoT_A <- function(data) {
   hold_player <- data %>% 
     summarise(Team = first(away_team), 
               TOI = sum(event_length) / 60,
-              GF = sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
-              GA = sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
-              CF = sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
-              CA = sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
+              GF =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
+              GA =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
+              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
+              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
               xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0))),
               xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0)))
               )
@@ -698,30 +700,42 @@ fun.teammate <- function(data, year) {
            event_length = ifelse(is.na(event_length), 0, event_length)
            )
   
-  # Run Functions
+  
+  # Home functions
   print("home_on_1", quote = F)
   home1 <- fun.event_playerH(hold, "home_on_1")
+  
   print("home_on_2", quote = F)
   home2 <- fun.event_playerH(hold, "home_on_2")
+  
   print("home_on_3", quote = F)
   home3 <- fun.event_playerH(hold, "home_on_3")
+  
   print("home_on_4", quote = F)
   home4 <- fun.event_playerH(hold, "home_on_4")
+  
   print("home_on_5", quote = F)
   home5 <- fun.event_playerH(hold, "home_on_5")
+  
   print("home_on_6", quote = F)
   home6 <- fun.event_playerH(hold, "home_on_6")
   
+  # Away functions
   print("away_on_1", quote = F)
   away1 <- fun.event_playerA(hold, "away_on_1")
+  
   print("away_on_2", quote = F)
   away2 <- fun.event_playerA(hold, "away_on_2")
+  
   print("away_on_3", quote = F)
   away3 <- fun.event_playerA(hold, "away_on_3")
+  
   print("away_on_4", quote = F)
   away4 <- fun.event_playerA(hold, "away_on_4")
+  
   print("away_on_5", quote = F)
   away5 <- fun.event_playerA(hold, "away_on_5")
+  
   print("away_on_6", quote = F)
   away6 <- fun.event_playerA(hold, "away_on_6")
   
@@ -733,7 +747,9 @@ fun.teammate <- function(data, year) {
     rbind(., home2, home3, home4, home5, home6) %>% 
     group_by(player, teammate, game_id, home_team) %>% 
     summarise_at(vars(TOI:xGA), funs(sum)) %>% 
-    filter(!is.na(player), !is.na(teammate)) %>% 
+    filter(!is.na(player), 
+           !is.na(teammate)
+           ) %>% 
     rename(Team = home_team) %>% 
     data.frame()
   
@@ -741,7 +757,9 @@ fun.teammate <- function(data, year) {
     rbind(., away2, away3, away4, away5, away6) %>% 
     group_by(player, teammate, game_id, away_team) %>% 
     summarise_at(vars(TOI:xGA), funs(sum)) %>% 
-    filter(!is.na(player), !is.na(teammate)) %>% 
+    filter(!is.na(player), 
+           !is.na(teammate)
+           ) %>% 
     rename(Team = away_team) %>% 
     data.frame()
   
