@@ -4,6 +4,9 @@
 
 # NHL pbp data scraped using Emmanuel Perry's dryscrape functions. Code available here: https://github.com/mannyelk/corsica/tree/master/modules
 
+# If xG model is not available: 
+# add column entitled "pred_goal" to pbp data.frame, populate it with "1" for each observation, and ignore the xG figures
+
 library(dplyr)
 
 options(scipen = 999)
@@ -70,8 +73,8 @@ fun.onice_H <- function(data, venue) {
               GA =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)),
               CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
               CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0)))
+              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0))),
+              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0)))
               )
   
   return(on_ice)
@@ -85,8 +88,8 @@ fun.onice_A <- function(data, venue) {
               GA =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
               CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
               CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0)))
+              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0))),
+              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0)))
               )
   
   return(on_ice)
@@ -215,8 +218,8 @@ fun.QoT_H <- function(data) {
               GA =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
               CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
               CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0)))
+              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0))),
+              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0)))
               )
   
   return(hold_player)
@@ -230,8 +233,8 @@ fun.QoT_A <- function(data) {
               GA =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
               CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
               CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, prob_goal * xG_adj_a, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, prob_goal * xG_adj_h, 0)))
+              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0))),
+              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0)))
               )
   
   return(hold_player)
