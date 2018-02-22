@@ -2,7 +2,7 @@
 #####        Relative to Teammate       ||              12/26/17            #####
 #################################################################################
 
-# NHL pbp data scraped using Emmanuel Perry's dryscrape functions, available here: https://github.com/mannyelk/corsica/tree/master/modules
+# NHL pbp data scraped using Emmanuel Perry's dryscrape functions. Code available here: https://github.com/mannyelk/corsica/tree/master/modules
 
 library(dplyr)
 
@@ -784,20 +784,6 @@ fun.teammate <- function(data, year) {
 }
 rel_TM_combos_EV <- fun.teammate(pbp_df, "20172018")
 
-
-# In season - add
-max(pbp_df$game_id)
-max_game <- max(rel_combo$game_id)
-max_game
-
-new_pbp <- pbp_df %>% 
-  filter(game_id > max_game)
-
-rel_TM_new_EV <- fun.teammate(new_pbp, "20172018")
-
-rel_TM_combos_EV <- rel_combo %>% 
-  rbind(., rel_TM_new_EV) %>% 
-  arrange(player, teammate, game_id)
 
 
 ## --------------------- ##
