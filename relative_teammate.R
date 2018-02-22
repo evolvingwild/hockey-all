@@ -38,6 +38,7 @@ def_d_cut <- 100
 fun.goalie_find <- function(data) {
   
   # Identifies goalies within a given pbp data.frame & returns a data.frame to join for removal
+  
   goalie_return <- data.frame(player = sort(unique(na.omit(as.character(rbind(data$home_goalie, data$away_goalie))))), 
                               is_goalie = 1)
   
@@ -48,6 +49,7 @@ fun.goalie_find <- function(data) {
 rel_adj <- function(t_metric_wo, t_toi_wo, t_metric, cut, perc) {
   
   # Low TOI adjustment for various metrics
+  
   x <- ((t_metric_wo * (t_toi_wo^2 / cut^2)) + t_metric * (1 - (t_toi_wo^2 / cut^2))) * perc
   
   return(as.numeric(x))
