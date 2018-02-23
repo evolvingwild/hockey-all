@@ -14,16 +14,17 @@ options(scipen = 999)
 
 # Create Score Adjust Data Frame / xG adjustment
 scoreadj_corsi <- data.frame(matrix(nrow = 7, ncol = 3))
-
 scoreadj_corsi[, 1] <- c(1, 2, 3, 4, 5, 6, 7)
-scoreadj_corsi[, 2] <- c(0.840, 0.865, 0.898, 0.970, 1.052, 1.104, 1.138)
-scoreadj_corsi[, 3] <- c(1.236, 1.186, 1.128, 1.032, 0.953, 0.914, 0.892)
-
+scoreadj_corsi[, 2] <- c(0.839, 0.867, 0.900, 0.970, 1.050, 1.100, 1.139)
+scoreadj_corsi[, 3] <- c(1.236, 1.181, 1.125, 1.031, 0.955, 0.916, 0.891)
 colnames(scoreadj_corsi) <- c("home_lead", "home_corsi_adj", "away_corsi_adj")
 
 # xG Venue Adjustment Values
-xG_adj_h <- 0.9468472
-xG_adj_a <- 1.059477
+scoreadj_xG <- data.frame(matrix(nrow = 3, ncol = 3))
+scoreadj_xG[, 1] <- c(1, 2, 3)
+scoreadj_xG[, 2] <- c(0.911, 0.950, 0.992)
+scoreadj_xG[, 3] <- c(1.108, 1.056, 1.008)
+colnames(scoreadj_xG) <- c("home_lead_state", "home_xG_adj", "away_xG_adj")
 
 # Skater Positions
 player_position <- readRDS("skater_position.rds") # available here: https://github.com/evolvingwild/hockey-all/blob/master/skater_position.rds
@@ -70,12 +71,12 @@ fun.onice_H <- function(data, venue) {
   on_ice <- data %>% 
     summarise(Team = first(home_team), 
               TOI = sum(event_length) / 60,
-              GF =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
-              GA =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)),
-              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
-              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0)))
+              GF =  sum(event_team == home_team & event_type == "GOAL"), 
+              GA =  sum(event_team == away_team & event_type == "GOAL"),
+              CF =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]), 
+              CA =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]),
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2])),
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3]))
               )
   
   return(on_ice)
@@ -85,12 +86,12 @@ fun.onice_A <- function(data, venue) {
   on_ice <- data %>% 
     summarise(Team = first(away_team), 
               TOI = sum(event_length) / 60,
-              GF =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
-              GA =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
-              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
-              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0)))
+              GF =  sum(event_team == away_team & event_type == "GOAL"), 
+              GA =  sum(event_team == home_team & event_type == "GOAL"), 
+              CF =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]), 
+              CA =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]),
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3])),
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2]))
               )
   
   return(on_ice)
@@ -99,9 +100,16 @@ fun.onice_combine <- function(data, year) {
   
   # Filter pbp data
   hold <- data %>% 
-    filter(game_strength_state %in% st.even_strength, game_period < 5, event_length < 900) %>% 
+    filter(game_strength_state %in% st.even_strength, 
+           game_period < 5, 
+           event_length < 900
+           ) %>% 
     mutate(scradj = home_score - away_score, 
-           home_lead = ifelse(scradj >= 3, 3, ifelse(scradj <= -3, -3, scradj)),
+           home_lead = ifelse(scradj >= 3, 3, 
+                              ifelse(scradj <= -3, -3, scradj)),
+           home_lead_state = ifelse(home_lead < 0, 1, 
+                                    ifelse(home_lead == 0, 2, 
+                                           ifelse(home_lead > 0, 3, home_lead))),
            home_lead = home_lead + 4, 
            event_length = ifelse(is.na(event_length), 0, event_length)
            )
@@ -215,12 +223,12 @@ fun.QoT_H <- function(data) {
   hold_player <- data %>% 
     summarise(Team = first(home_team), 
               TOI = sum(event_length) / 60,
-              GF =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)), 
-              GA =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
-              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)), 
-              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0)))
+              GF =  sum(event_team == home_team & event_type == "GOAL"), 
+              GA =  sum(event_team == away_team & event_type == "GOAL"), 
+              CF =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]), 
+              CA =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]),
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2])),
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3]))
               )
   
   return(hold_player)
@@ -230,12 +238,12 @@ fun.QoT_A <- function(data) {
   hold_player <- data %>% 
     summarise(Team = first(away_team), 
               TOI = sum(event_length) / 60,
-              GF =  sum(ifelse(event_team == away_team & event_type == "GOAL", 1, 0)), 
-              GA =  sum(ifelse(event_team == home_team & event_type == "GOAL", 1, 0)),
-              CF =  sum(ifelse(event_type %in% st.corsi_events & event_team == away_team, (1 * scoreadj_corsi[home_lead, 3]), 0)), 
-              CA =  sum(ifelse(event_type %in% st.corsi_events & event_team == home_team, (1 * scoreadj_corsi[home_lead, 2]), 0)),
-              xGF = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == away_team, pred_goal * xG_adj_a, 0))),
-              xGA = sum(na.omit(ifelse(event_type %in% st.fenwick_events & event_team == home_team, pred_goal * xG_adj_h, 0)))
+              GF =  sum(event_team == away_team & event_type == "GOAL"), 
+              GA =  sum(event_team == home_team & event_type == "GOAL"), 
+              CF =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]), 
+              CA =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]), 
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3])), 
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2]))
               )
   
   return(hold_player)
@@ -701,7 +709,11 @@ fun.teammate <- function(data, year) {
            event_length < 900
            ) %>% 
     mutate(scradj = home_score - away_score, 
-           home_lead = ifelse(scradj >= 3, 3, ifelse(scradj <= -3, -3, scradj)),
+           home_lead = ifelse(scradj >= 3, 3, 
+                              ifelse(scradj <= -3, -3, scradj)),
+           home_lead_state = ifelse(home_lead < 0, 1, 
+                                    ifelse(home_lead == 0, 2, 
+                                           ifelse(home_lead > 0, 3, home_lead))),
            home_lead = home_lead + 4, 
            event_length = ifelse(is.na(event_length), 0, event_length)
            )
@@ -816,7 +828,7 @@ teams <- on_ice_EV %>%
 
 
 # WOWY
-fun.rel_source <- function(TM_data, games_data, position_data, year) {
+fun.rel_source <- function(TM_data, games_data, teams_data, position_data, year) {
   
   # Prep
   prep_TM <- TM_data %>% 
@@ -916,18 +928,25 @@ fun.rel_source <- function(TM_data, games_data, position_data, year) {
                                                  rel_adj(TM_xGA_60_w.o, TM_TOI_w.o, xGA60_t, def_d_cut, player_TOI_perc_w), 
                                                  weighted_TM_xGA60))
           ) %>% 
+    mutate_at(vars(TM_TOI_w.o:TM_xGA_w.o), funs(round(., 3))) %>% 
+    left_join(., teams_data, by = c("player", "season")) %>% 
+    rename(player_team = Team) %>% 
+    select(player:season, player_team, TOI_tog:adj_weighted_TM_xGA60) %>% 
+    arrange(season, player, teammate) %>% 
     data.frame()
   
   return(rel_TM_metrics)
 }
 rel_source_EV <- fun.rel_source(TM_data = rel_TM_combos_EV, 
                                 games_data = on_ice_EV, 
+                                teams_data = teams,
                                 position_data = player_position, 
                                 year = "20172018")
 
 
 # Relative to Teammate - Initial & TOI Adjust
 fun.rel_teammate <- function(data, position_data, teams_data) {
+  
   rel_TM_impact <- data %>% 
     group_by(player, season) %>%
     summarise(TOI   = first(TOI_p),
@@ -984,11 +1003,11 @@ fun.rel_teammate <- function(data, position_data, teams_data) {
            adj_rel_Cdiff60_TM  = adj_rel_CF60_TM - adj_rel_CA60_TM,
            adj_rel_xGdiff60_TM = adj_rel_xGF60_TM - adj_rel_xGA60_TM, 
            
-           rel_CF_TM_perc  = 100 * round(CF60 / (CF60 + CA60) - w_TM_CF60 / (w_TM_CF60 + w_TM_CA60) + .5, 4), 
-           rel_xGF_TM_perc = 100 * round(xGF60 / (xGF60 + xGA60) - w_TM_xGF60 / (w_TM_xGF60 + w_TM_xGA60) + .5, 4), 
+           rel_CF_TM_perc  = 100 * round(CF60 / (CF60 + CA60) - w_TM_CF60 / (w_TM_CF60 + w_TM_CA60), 4), 
+           rel_xGF_TM_perc = 100 * round(xGF60 / (xGF60 + xGA60) - w_TM_xGF60 / (w_TM_xGF60 + w_TM_xGA60), 4), 
            
-           adj_rel_CF_TM_perc  = 100 * round(CF60 / (CF60 + CA60) - adj_w_TM_CF60 / (adj_w_TM_CF60 + adj_w_TM_CA60) + .5, 4), 
-           adj_rel_xGF_TM_perc = 100 * round(xGF60 / (xGF60 + xGA60) - adj_w_TM_xGF60 / (adj_w_TM_xGF60 + adj_w_TM_xGA60) + .5, 4), 
+           adj_rel_CF_TM_perc  = 100 * round(CF60 / (CF60 + CA60) - adj_w_TM_CF60 / (adj_w_TM_CF60 + adj_w_TM_CA60), 4), 
+           adj_rel_xGF_TM_perc = 100 * round(xGF60 / (xGF60 + xGA60) - adj_w_TM_xGF60 / (adj_w_TM_xGF60 + adj_w_TM_xGA60), 4), 
            
            Corsi_total_impact = CF_impact - CA_impact,
            xG_total_impact = xGF_impact - xGA_impact, 
@@ -1031,34 +1050,46 @@ fun.rel_teammate_adj <- function(data) {
            tm_xGF_center = adj_w_TM_xGF60 - mean(adj_w_TM_xGF60), 
            tm_xGA_center = adj_w_TM_xGA60 - mean(adj_w_TM_xGA60), 
            
-           n_rel_CF60  = round(CF60 - (tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2), 
-           n_rel_CA60  = round(CA60 - (tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
-           n_rel_xGF60 = round(xGF60 - (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)), 3), 
-           n_rel_xGA60 = round(xGA60 - (tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3), 
+           t_adj_w_TM_CF60 =  round((tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2),  
+           t_adj_w_TM_CA60 =  round((tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
+           t_adj_w_TM_xGF60 = round((tm_xGF_center*.81 + mean(adj_w_TM_xGF60)), 3), 
+           t_adj_w_TM_xGA60 = round((tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3),
            
-           t_adj_CF60  = n_rel_CF60 - adj_rel_CF60_TM, 
-           t_adj_CA60  = n_rel_CA60 - adj_rel_CA60_TM, 
-           t_adj_xGF60 = n_rel_xGF60 - adj_rel_xGF60_TM, 
-           t_adj_xGA60 = n_rel_xGA60 - adj_rel_xGA60_TM, 
+           t_adj_relTM_CF60  = round(CF60 - (tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2), 
+           t_adj_relTM_CA60  = round(CA60 - (tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
+           t_adj_relTM_xGF60 = round(xGF60 - (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)), 3), 
+           t_adj_relTM_xGA60 = round(xGA60 - (tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3), 
            
-           n_rel_CF_TM_perc  = 100 * round(CF60/(CF60 + CA60) - 
-                                             (tm_CF_center*.8 + mean(adj_w_TM_CF60)) / ((tm_CF_center*.8 + mean(adj_w_TM_CF60)) + (tm_CA_center*.88 + mean(adj_w_TM_CA60))) + .5, 4), 
+           t_adj_relTM_Cdiff60 = t_adj_relTM_CF60 - t_adj_relTM_CA60, 
+           t_adj_relTM_xGdiff60 = t_adj_relTM_xGF60 - t_adj_relTM_xGA60, 
            
-           n_rel_xGF_TM_perc = 100 * round(xGF60/(xGF60 + xGA60) - 
-                                             (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) / ((tm_xGF_center*.81 + mean(adj_w_TM_xGF60)) + (tm_xGA_center*.85 + mean(adj_w_TM_xGA60))) + .5, 4), 
+           t_adj_relTM_CFperc  = 100 * round(CF60 / (CF60 + CA60) - 
+                                             t_adj_w_TM_CF60 / (t_adj_w_TM_CF60 + t_adj_w_TM_CA60), 4), 
            
-           n_CF_impact  = round(n_rel_CF60*(TOI/60), 2), 
-           n_CA_impact  = round(n_rel_CA60*(TOI/60), 2), 
-           n_xGF_impact = round(n_rel_xGF60*(TOI/60), 3), 
-           n_xGA_impact = round(n_rel_xGA60*(TOI/60), 3), 
+           t_adj_relTM_xGFperc = 100 * round(xGF60/(xGF60 + xGA60) - 
+                                             t_adj_w_TM_xGF60 / (t_adj_w_TM_xGF60 + t_adj_w_TM_xGA60), 4), 
            
-           n_Corsi_total_impact = n_CF_impact - n_CA_impact, 
-           n_xG_total_impact = n_xGF_impact - n_xGA_impact
+           CF60_team_adjust  = t_adj_relTM_CF60 - adj_rel_CF60_TM, 
+           CA60_team_adjust  = t_adj_relTM_CA60 - adj_rel_CA60_TM, 
+           xGF60_team_adjust = t_adj_relTM_xGF60 - adj_rel_xGF60_TM, 
+           xGA60_team_adjust = t_adj_relTM_xGA60 - adj_rel_xGA60_TM, 
+           
+           t_adj_CF_impact  = round(t_adj_relTM_CF60 * (TOI / 60), 2), 
+           t_adj_CA_impact  = round(t_adj_relTM_CA60 * (TOI / 60), 2), 
+           t_adj_xGF_impact = round(t_adj_relTM_xGF60 * (TOI / 60), 3), 
+           t_adj_xGA_impact = round(t_adj_relTM_xGA60 * (TOI / 60), 3), 
+           
+           t_adj_Corsi_total_impact = t_adj_CF_impact - t_adj_CA_impact, 
+           t_adj_xG_total_impact = t_adj_xGF_impact - t_adj_xGA_impact
            ) %>% 
     select(player, position, season, Team, TOI, 
            CF60, CA60, xGF60, xGA60, 
-           t_adj_CF60:t_adj_xGA60,
-           n_rel_CF60:n_xG_total_impact)
+           t_adj_w_TM_CF60:t_adj_w_TM_xGA60, 
+           t_adj_relTM_CF60:t_adj_relTM_xGFperc, 
+           CF60_team_adjust:xGA60_team_adjust,
+           t_adj_CF_impact:t_adj_xG_total_impact) %>% 
+    data.frame()
+  
   }
 rel_TM_player_adj <- fun.rel_teammate_adj(data = rel_TM_player)
 
@@ -1071,7 +1102,9 @@ rel_TM_qual <- rel_TM_player_adj %>%
          qual = 1 * ((position == 1 & n <= 390) | (position == 2 & n <= 210))
          ) %>% 
   filter(qual == 1) %>% 
-  select(-c(qual, n))
+  select(-c(qual, n)) %>% 
+  arrange(desc(t_adj_xG_total_impact)) %>% 
+  data.frame()
 
 
 
