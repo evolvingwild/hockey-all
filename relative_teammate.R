@@ -1,5 +1,5 @@
 #################################################################################
-#####        Relative to Teammate       ||              02/22/18            #####
+#####        Relative to Teammate       ||              02/23/18            #####
 #################################################################################
 
 # NHL pbp data scraped using Emmanuel Perry's dryscrape functions. 
@@ -12,24 +12,28 @@ library(dplyr)
 
 options(scipen = 999)
 
-# Create Score Adjust Data Frame / xG adjustment
+
+
+# Create Corsi Score Adjust Data Frame
 scoreadj_corsi <- data.frame(matrix(nrow = 7, ncol = 3))
 scoreadj_corsi[, 1] <- c(1, 2, 3, 4, 5, 6, 7)
 scoreadj_corsi[, 2] <- c(0.839, 0.867, 0.900, 0.970, 1.050, 1.100, 1.139)
 scoreadj_corsi[, 3] <- c(1.236, 1.181, 1.125, 1.031, 0.955, 0.916, 0.891)
 colnames(scoreadj_corsi) <- c("home_lead", "home_corsi_adj", "away_corsi_adj")
 
-# xG Venue Adjustment Values
+# Create xG Score Adjust Data Frame (@EvolvingWild model)
 scoreadj_xG <- data.frame(matrix(nrow = 3, ncol = 3))
 scoreadj_xG[, 1] <- c(1, 2, 3)
 scoreadj_xG[, 2] <- c(0.911, 0.950, 0.992)
 scoreadj_xG[, 3] <- c(1.108, 1.056, 1.008)
 colnames(scoreadj_xG) <- c("home_lead_state", "home_xG_adj", "away_xG_adj")
 
+
 # Skater Positions
 player_position <- readRDS("skater_position.rds") # available here: https://github.com/evolvingwild/hockey-all/blob/master/skater_position.rds
 
-## Objects
+
+# Objects
 st.fenwick_events <- c("SHOT", "GOAL", "MISS")
 st.corsi_events <- c("SHOT", "GOAL", "MISS", "BLOCK" )
 st.even_strength <- as.factor(c("5v5", "4v4", "3v3"))
@@ -38,6 +42,7 @@ off_f_cut <- 90
 off_d_cut <- 115
 def_f_cut <- 125
 def_d_cut <- 100
+
 
 # Functions
 fun.goalie_find <- function(data) {
@@ -59,6 +64,7 @@ rel_adj <- function(t_metric_wo, t_toi_wo, t_metric, cut, perc) {
   
   return(as.numeric(x))
   }
+
 
 
 ## ------------------------------------------------- ##
@@ -211,6 +217,7 @@ fun.onice_combine <- function(data, year) {
 
 on_ice_EV <- fun.onice_combine(data = pbp_df, 
                                year = "20172018")
+
 
 
 ## ------------------------------------------------- ##
@@ -1103,7 +1110,7 @@ rel_TM_qual <- rel_TM_player_adj %>%
          ) %>% 
   filter(qual == 1) %>% 
   select(-c(qual, n)) %>% 
-  arrange(desc(t_adj_xG_total_impact)) %>% 
+  arrange(player) %>% 
   data.frame()
 
 
