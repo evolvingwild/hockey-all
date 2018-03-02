@@ -81,8 +81,8 @@ fun.onice_H <- function(data, venue) {
               GA =  sum(event_team == away_team & event_type == "GOAL"),
               CF =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]), 
               CA =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]),
-              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2])),
-              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3]))
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * scoreadj_xG[home_lead_state, 2])),
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * scoreadj_xG[home_lead_state, 3]))
               )
   
   return(on_ice)
@@ -96,8 +96,8 @@ fun.onice_A <- function(data, venue) {
               GA =  sum(event_team == home_team & event_type == "GOAL"), 
               CF =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]), 
               CA =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]),
-              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3])),
-              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2]))
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * scoreadj_xG[home_lead_state, 3])),
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * scoreadj_xG[home_lead_state, 2]))
               )
   
   return(on_ice)
@@ -234,8 +234,8 @@ fun.QoT_H <- function(data) {
               GA =  sum(event_team == away_team & event_type == "GOAL"), 
               CF =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]), 
               CA =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]),
-              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2])),
-              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3]))
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * scoreadj_xG[home_lead_state, 2])),
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * scoreadj_xG[home_lead_state, 3]))
               )
   
   return(hold_player)
@@ -249,8 +249,8 @@ fun.QoT_A <- function(data) {
               GA =  sum(event_team == home_team & event_type == "GOAL"), 
               CF =  sum((event_type %in% st.corsi_events & event_team == away_team) * scoreadj_corsi[home_lead, 3]), 
               CA =  sum((event_type %in% st.corsi_events & event_team == home_team) * scoreadj_corsi[home_lead, 2]), 
-              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * points_adj[home_lead_state, 3])), 
-              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * points_adj[home_lead_state, 2]))
+              xGF = sum(na.omit((event_type %in% st.fenwick_events & event_team == away_team) * pred_goal * scoreadj_xG[home_lead_state, 3])), 
+              xGA = sum(na.omit((event_type %in% st.fenwick_events & event_team == home_team) * pred_goal * scoreadj_xG[home_lead_state, 2]))
               )
   
   return(hold_player)
@@ -1059,13 +1059,13 @@ fun.rel_teammate_adj <- function(data) {
            
            t_adj_w_TM_CF60 =  round((tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2),  
            t_adj_w_TM_CA60 =  round((tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
-           t_adj_w_TM_xGF60 = round((tm_xGF_center*.81 + mean(adj_w_TM_xGF60)), 3), 
-           t_adj_w_TM_xGA60 = round((tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3),
+           t_adj_w_TM_xGF60 = round((tm_xGF_center*.8 + mean(adj_w_TM_xGF60)), 3), 
+           t_adj_w_TM_xGA60 = round((tm_xGA_center*.86 + mean(adj_w_TM_xGA60)), 3),
            
            t_adj_relTM_CF60  = round(CF60 - (tm_CF_center*.8 + mean(adj_w_TM_CF60)), 2), 
            t_adj_relTM_CA60  = round(CA60 - (tm_CA_center*.88 + mean(adj_w_TM_CA60)), 2), 
-           t_adj_relTM_xGF60 = round(xGF60 - (tm_xGF_center*.81 + mean(adj_w_TM_xGF60)), 3), 
-           t_adj_relTM_xGA60 = round(xGA60 - (tm_xGA_center*.85 + mean(adj_w_TM_xGA60)), 3), 
+           t_adj_relTM_xGF60 = round(xGF60 - (tm_xGF_center*.8 + mean(adj_w_TM_xGF60)), 3), 
+           t_adj_relTM_xGA60 = round(xGA60 - (tm_xGA_center*.86 + mean(adj_w_TM_xGA60)), 3), 
            
            t_adj_relTM_Cdiff60 = t_adj_relTM_CF60 - t_adj_relTM_CA60, 
            t_adj_relTM_xGdiff60 = t_adj_relTM_xGF60 - t_adj_relTM_xGA60, 
