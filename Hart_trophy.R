@@ -76,7 +76,8 @@ standings_table <- foreach(i = c(1:45, 47:58), .combine = rbind) %do% {
            ) %>% 
     mutate_at(vars(GP:PTS_perc), funs(as.numeric(.))) %>% 
     arrange(desc(PTS_perc))
-}
+  
+  }
 
 
 
@@ -192,9 +193,6 @@ display_1718 <- Awards_1718 %>%
   arrange(desc(pred_vote_perc))
 
 
+
 ### --- END --- ###
-
-
-
-
 
