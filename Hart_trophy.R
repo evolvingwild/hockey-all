@@ -11,7 +11,7 @@ library(rvest); library(car); library(doMC); library(dplyr)
 ##    Scrape hockey-reference    ##
 ## ----------------------------- ##
 
-# Compile Hart award voting results
+# Compile Hart award voting results - '05 season omitted
 awards_table <- foreach(i = c(1:45, 47:58), .combine = rbind) %do% { 
   
   Sys.sleep(1)
@@ -40,7 +40,7 @@ awards_table <- foreach(i = c(1:45, 47:58), .combine = rbind) %do% {
   }
 
 
-# Compile team standings
+# Compile team standings - '05 season omitted
 standings_table <- foreach(i = c(1:45, 47:58), .combine = rbind) %do% { 
   
   Sys.sleep(1)
