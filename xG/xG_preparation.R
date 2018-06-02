@@ -29,15 +29,15 @@ st.empty_net <- c("5vE", "Ev5", "4vE", "Ev4", "3vE", "Ev3") %>% as.factor()
 # All functions are set up to work with a dataframe that contains the NHL RTSS/play-by-play data. This data can be either downloaded 
 # from Emmanuel Perry's Corsica site (https://twitter.com/CorsicaHockey/status/980931037533532160) or scraped using his dryscrape 
 # functions (https://github.com/mannyelk/corsica/tree/master/modules). The "data" argument should be this play-by-play dataframe. 
-# If xG values are needed for a given play-by-play dataframe, it is recommended to use the pbp_full_add function, which uses all of the following. 
+# If xG values are needed, it is recommended to use the pbp_full_add function, which uses all of the following. 
 
 
 # Main preparation functions 
 fun.pbp_expand <- function(data) {
   
-  # Prepares play by play data for additional alterations required by the xG model. These new/fixed variables are not xG specific and can be used for other tasks. 
-  # Variables created include: event_circle, event_rinkside, event_zone, home_zone, pbp_distance, event_distance, event_angle, game_strength_state, home_skaters, away_skaters
-  # Additionally, a faceoff index is added for later joins.
+  # Prepares play by play data for the xG model. These variables are not xG specific and can be used for other tasks. 
+  # Variables: event_circle, event_rinkside, event_zone, home_zone, pbp_distance, event_distance, event_angle, 
+  # game_strength_state, home_skaters, away_skaters. Additionally, a faceoff index is added for later joins.
   
   data$event_description <- as.character(data$event_description)
   data$coords_x <- as.numeric(as.character(data$coords_x))
@@ -46,7 +46,7 @@ fun.pbp_expand <- function(data) {
   print("expand", quote = F) 
   
   hold <- data %>% 
-    # Manny's enhanced pbp functions
+    # Manny's enhanced pbp functions (from the dryscrape functions)
     mutate(event_circle = 
              1 * (coords_x <= -25 & coords_y > 0) + 
              2 * (coords_x <= -25 & coords_y < 0) + 
@@ -80,35 +80,61 @@ fun.pbp_expand <- function(data) {
            event_angle = abs(atan(coords_y / (89 - abs(coords_x))) * (180 / pi)), 
            
            # Update distance calc for long shots (and various mistakes)
-           event_distance = ifelse(event_type %in% st.fenwick_events & pbp_distance > 89 & coords_x < 0 & 
-                                     event_detail != "Tip-In" & event_detail != "Wrap-around" & event_detail != "Deflected" & !(pbp_distance > 89 & event_zone == "Off"), 
+           event_distance = ifelse(event_type %in% st.fenwick_events & 
+                                     pbp_distance > 89 & 
+                                     coords_x < 0 & 
+                                     event_detail != "Tip-In" & 
+                                     event_detail != "Wrap-around" & 
+                                     event_detail != "Deflected" & 
+                                     !(pbp_distance > 89 & event_zone == "Off"), 
                                    sqrt((abs(coords_x) + 89)^2 + coords_y^2), 
                                    
-                                   ifelse(event_type %in% st.fenwick_events & pbp_distance > 89 & coords_x > 0 & 
-                                            event_detail != "Tip-In" & event_detail != "Wrap-around" & event_detail != "Deflected" & !(pbp_distance > 89 & event_zone == "Off"), 
+                                   ifelse(event_type %in% st.fenwick_events & 
+                                            pbp_distance > 89 & 
+                                            coords_x > 0 & 
+                                            event_detail != "Tip-In" & 
+                                            event_detail != "Wrap-around" & 
+                                            event_detail != "Deflected" & 
+                                            !(pbp_distance > 89 & event_zone == "Off"), 
                                           sqrt((coords_x + 89)^2 + coords_y^2), 
                                           event_distance)),  
            
            event_angle = ifelse(event_type %in% st.fenwick_events & pbp_distance > 89 & coords_x < 0 & 
-                                  event_detail != "Tip-In" & event_detail != "Wrap-around" & event_detail != "Deflected" & !(pbp_distance > 89 & event_zone == "Off"), 
+                                  event_detail != "Tip-In" & 
+                                  event_detail != "Wrap-around" & 
+                                  event_detail != "Deflected" & 
+                                  !(pbp_distance > 89 & event_zone == "Off"), 
                                 abs( atan(coords_y / (abs(coords_x) + 89)) * (180 / pi)), 
                                 
-                                ifelse(event_type %in% st.fenwick_events & pbp_distance > 89 & coords_x > 0 & 
-                                         event_detail != "Tip-In" & event_detail != "Wrap-around" & event_detail != "Deflected" & !(pbp_distance > 89 & event_zone == "Off"), 
+                                ifelse(event_type %in% st.fenwick_events & 
+                                         pbp_distance > 89 & 
+                                         coords_x > 0 & 
+                                         event_detail != "Tip-In" & 
+                                         event_detail != "Wrap-around" & 
+                                         event_detail != "Deflected" & 
+                                         !(pbp_distance > 89 & event_zone == "Off"), 
                                        abs(atan(coords_y / (coords_x + 89)) * (180 / pi)), 
                                        event_angle)), 
            
-           event_zone = ifelse(event_type %in% st.fenwick_events & event_zone == "Def" & pbp_distance <= 64, "Off", event_zone), 
+           event_zone = ifelse(event_type %in% st.fenwick_events & 
+                                 event_zone == "Def" & 
+                                 pbp_distance <= 64, "Off", event_zone), 
            
            # Update penalty shot strength states
-           game_strength_state = ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & event_team == home_team, "Ev1", 
-                                        ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & event_team == away_team, "1vE", game_strength_state)), 
+           game_strength_state = ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & 
+                                          event_team == home_team, "Ev1", 
+                                        ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & 
+                                                 event_team == away_team, "1vE", game_strength_state)), 
            
-           home_skaters = ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & event_team == home_team, 1, 
-                                 ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & event_team == away_team, 0, home_skaters)), 
+           home_skaters = ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & 
+                                   event_team == home_team, 1, 
+                                 ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & 
+                                          event_team == away_team, 0, home_skaters)), 
            
-           away_skaters = ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & event_team == home_team, 0, 
-                                 ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & event_team == away_team, 1, away_skaters))
+           away_skaters = ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & 
+                                   event_team == home_team, 0, 
+                                 ifelse((grepl("penalty shot", tolower(event_description)) == TRUE) & 
+                                          event_team == away_team, 1, away_skaters))
            )
   
   print("face_ID", quote = F)  
@@ -221,25 +247,10 @@ fun.pbp_prep <- function(data, prep_type) {
              is_home =            1 * (event_team == home_team),
              score_state =        ifelse(is_home == 1, home_score - away_score, away_score - home_score), 
              event_detail =       ifelse(is.na(event_detail), "Wrist", event_detail), 
-             distance_from_last = sqrt((coords_x - coords_x_last)^2 + (coords_y - coords_y_last)^2), 
-             
-             # Flurry indicator
-             flurry = 1 * (shift_ID == lag(shift_ID, default = 0) & event_team == lag(event_team)), 
-             # Probably a better way to do this...
-             flurry_1 = ifelse(flurry == 1 & lag(flurry) == 1, 2, flurry), 
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 2, 3, flurry_1),
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 3, 4, flurry_1),
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 4, 5, flurry_1),
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 5, 6, flurry_1),
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 6, 7, flurry_1),
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 7, 8, flurry_1),
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 8, 9, flurry_1),
-             flurry_1 = ifelse(flurry == 1 & lag(flurry_1) == 9, 10, flurry_1)
+             distance_from_last = sqrt((coords_x - coords_x_last)^2 + (coords_y - coords_y_last)^2)
              ) %>%
-      select(-c(flurry)) %>% 
       rename(shot_distance = event_distance, 
-             shot_angle = event_angle,
-             flurry = flurry_1
+             shot_angle = event_angle
              ) %>% 
       select(game_id, event_index, season, game_date, game_period, game_seconds, 
              game_strength_state, game_score_state, score_state, is_home, 
@@ -249,7 +260,7 @@ fun.pbp_prep <- function(data, prep_type) {
              coords_x, coords_y, pbp_distance, shot_distance, shot_angle,
              event_team_last, same_team_last, event_strength_last, event_type_last, 
              seconds_since_last, distance_from_last, coords_x_last, coords_y_last,
-             shift_ID, shift_length, flurry
+             shift_ID, shift_length
              ) %>% 
       data.frame()
     
@@ -295,7 +306,7 @@ fun.pbp_prep <- function(data, prep_type) {
              event_detail =       ifelse(is.na(event_detail), "Wrist", event_detail), 
              distance_from_last = sqrt((coords_x - coords_x_last)^2 + (coords_y - coords_y_last)^2), 
              prior_event_EV =     1 * (event_strength_last %in% st.even_strength)
-             %>%
+             ) %>%
       rename(shot_distance = event_distance, 
              shot_angle = event_angle
              ) %>% 
