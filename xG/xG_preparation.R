@@ -29,7 +29,7 @@ st.empty_net <- c("5vE", "Ev5", "4vE", "Ev4", "3vE", "Ev3") %>% as.factor()
 # All functions are set up to work with a dataframe that contains the NHL RTSS/play-by-play data. This data can be either downloaded 
 # from Emmanuel Perry's Corsica site (https://twitter.com/CorsicaHockey/status/980931037533532160) or scraped using his dryscrape 
 # functions (https://github.com/mannyelk/corsica/tree/master/modules). The "data" argument should be this play-by-play dataframe. 
-# If xG values are needed, it is recommended to use the pbp_full_add function, which uses all of the following. 
+# If xG values are needed an xG model is done, it is recommended to use the pbp_full_add function, which uses all of the following. 
 
 
 # Main preparation functions 
