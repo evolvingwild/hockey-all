@@ -4,9 +4,7 @@
 
 
 # Required packages
-library(DiagrammeR); library(rsvg)
-library(xgboost); require(glmnet)
-require(caret); require(dplyr)
+library(xgboost); require(dplyr)
 
 options(scipen = 999)
 set.seed(250)
