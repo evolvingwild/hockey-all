@@ -1,4 +1,4 @@
-# xG Readme
+#### Notes
 
 The two scripts contained in this folder contain the functions and process used to create our Expected Goals model (xG). The "xG_preparation.R" script contain the functons required to prepare the NHL RTSS data for modelling. The "xG_modelling.R" script contains the code we used to train our xG model using the `xgboost` package. 
 
