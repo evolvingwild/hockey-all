@@ -6,6 +6,7 @@ Please read our detailed write-up about the model, where we cover the history of
 
 
 Thanks, 
+***
 Josh & Luke
 
 
