@@ -311,6 +311,7 @@ metrics_hart <- corsica_GAR_1718 %>%
   left_join(., href_1718 %>% select(player, PS), by = "player") %>% 
   left_join(., corsica_rel_1718 %>% select(player, rel_TM_C_impact, rel_TM_xG_impact), by = "player") %>% 
   left_join(., NST_rel_1718 %>% select(player, rel_HD_impact), by = "player") %>% 
+  group_by(position) %>% 
   mutate_at(vars(C_GAR, GS, PS, SR, rel_TM_C_impact, rel_TM_xG_impact, rel_HD_impact), funs(standardize(.))) %>% 
   mutate(avg_rel =  (rel_TM_C_impact + rel_TM_xG_impact + rel_HD_impact) / 3, 
          avg_score = (C_GAR + GS + PS + SR + avg_rel) / 5) %>% 
@@ -328,13 +329,12 @@ metrics_norris <- corsica_GAR_1718 %>%
   left_join(., href_1718 %>% select(player, PS), by = "player") %>% 
   left_join(., corsica_rel_1718 %>% select(player, rel_TM_C_impact, rel_TM_xG_impact), by = "player") %>% 
   left_join(., NST_rel_1718 %>% select(player, rel_HD_impact), by = "player") %>% 
-  group_by(position) %>% 
+  filter(position == 2) %>% 
   mutate_at(vars(C_GAR, GS, PS, SR, rel_TM_C_impact, rel_TM_xG_impact, rel_HD_impact), funs(standardize(.))) %>% 
   mutate(avg_rel =  (rel_TM_C_impact + rel_TM_xG_impact + rel_HD_impact) / 3, 
          avg_score = (C_GAR + GS + PS + SR + avg_rel) / 5) %>% 
   select(-c(rel_TM_C_impact, rel_TM_xG_impact, rel_HD_impact)) %>% 
   mutate_if(is.numeric, funs(round(., 2))) %>% 
-  filter(position == 2) %>% 
   arrange(desc(avg_score)) %>% 
   data.frame()
 
@@ -347,6 +347,7 @@ metrics_calder <- corsica_GAR_1718 %>%
   left_join(., href_1718 %>% select(player, PS), by = "player") %>% 
   left_join(., corsica_rel_1718 %>% select(player, rel_TM_C_impact, rel_TM_xG_impact), by = "player") %>% 
   left_join(., NST_rel_1718 %>% select(player, rel_HD_impact), by = "player") %>% 
+  group_by(position) %>% 
   mutate_at(vars(C_GAR, GS, PS, SR, rel_TM_C_impact, rel_TM_xG_impact, rel_HD_impact), funs(standardize(.))) %>% 
   mutate(avg_rel =  (rel_TM_C_impact + rel_TM_xG_impact + rel_HD_impact) / 3, 
          avg_score = (C_GAR + GS + PS + SR + avg_rel) / 5) %>% 
@@ -463,6 +464,35 @@ total_scores <- scores_hart %>%
 
 
 ###########################
+
+
+## ----------------- ##
+##   Miscellaneous   ##
+## ----------------- ##
+
+
+# View specific writer's full ballot
+fun.writer_ballot <- function(last.name) { 
+  
+  writer_last_name <- last.name
+  
+  writer_ballot <- rbind(votes_hart %>% filter(last_name == writer_last_name), 
+                         votes_norris %>% filter(last_name == writer_last_name), 
+                         votes_selke %>% filter(last_name == writer_last_name), 
+                         votes_calder %>% filter(last_name == writer_last_name))
+  
+  writer_ballot[, 1] <- c("hart", "norris", "selke", "calder")
+  
+  View(writer_ballot)
+  
+  }
+fun.writer_ballot(last.name = "Haggerty")
+
+
+# Correlation matrix of writers' votes
+library(psych)
+pairs.panels(total_scores %>% select(score_hart:score_calder))
+
 
 
 
