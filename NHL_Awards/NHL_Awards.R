@@ -303,7 +303,7 @@ href_1718 <- href_1718 %>%
 
 #################################
 
-## Hart Combine
+## Hart: select, combine, standardize, and average all metrics
 metrics_hart <- corsica_GAR_1718 %>% 
   select(player, position, Team, TOI, C_GAR) %>% 
   left_join(., corsica_all_sit_1718 %>% select(player, GS), by = "player") %>% 
@@ -312,7 +312,7 @@ metrics_hart <- corsica_GAR_1718 %>%
   left_join(., corsica_rel_1718 %>% select(player, rel_TM_C_impact, rel_TM_xG_impact), by = "player") %>% 
   left_join(., NST_rel_1718 %>% select(player, rel_HD_impact), by = "player") %>% 
   group_by(position) %>% 
-  mutate_at(vars(C_GAR, GS, PS, SR, rel_TM_C_impact, rel_TM_xG_impact, rel_HD_impact), funs(standardize(.))) %>% 
+  mutate_at(vars(C_GAR, GS, PS, SR, rel_TM_C_impact, rel_TM_xG_impact, rel_HD_impact), funs(standardize(.))) %>%
   mutate(avg_rel =  (rel_TM_C_impact + rel_TM_xG_impact + rel_HD_impact) / 3, 
          avg_score = (C_GAR + GS + PS + SR + avg_rel) / 5) %>% 
   select(-c(rel_TM_C_impact, rel_TM_xG_impact, rel_HD_impact)) %>% 
@@ -321,7 +321,7 @@ metrics_hart <- corsica_GAR_1718 %>%
   data.frame()
 
 
-# Norris Combine
+# Norris: select, combine, standardize, and average all metrics
 metrics_norris <- corsica_GAR_1718 %>% 
   select(player, position, Team, TOI, C_GAR) %>% 
   left_join(., corsica_all_sit_1718 %>% select(player, GS), by = "player") %>% 
@@ -339,7 +339,7 @@ metrics_norris <- corsica_GAR_1718 %>%
   data.frame()
 
 
-# Calder Combine
+# Calder: select, combine, standardize, and average all metrics
 metrics_calder <- corsica_GAR_1718 %>% 
   select(player, position, Team, TOI, C_GAR) %>% 
   left_join(., corsica_all_sit_1718 %>% select(player, GS), by = "player") %>% 
@@ -357,7 +357,7 @@ metrics_calder <- corsica_GAR_1718 %>%
   data.frame()
 
 
-# Selke Combine
+# Selke: select, combine, standardize, and average all metrics
 metrics_selke <- corsica_GAR_1718 %>% 
   select(player, position, Team, TOI, C_GAR_D) %>% 
   left_join(., href_1718 %>% select(player, DPS), by = "player") %>% 
@@ -381,7 +381,7 @@ metrics_selke <- corsica_GAR_1718 %>%
 
 ###########################
 
-# HART: Add in player z-scores for each vote
+# HART: Add in player average scores for each vote
 combine_hart <- votes_hart %>% 
   left_join(., metrics_hart %>% select(player, avg_score) %>% rename(vote_1 = player, avg_score_1 = avg_score), by = "vote_1") %>% 
   left_join(., metrics_hart %>% select(player, avg_score) %>% rename(vote_2 = player, avg_score_2 = avg_score), by = "vote_2") %>% 
@@ -395,6 +395,7 @@ avg_vote <- mean(c(na.omit(combine_hart[, 10:14])[, 1], na.omit(combine_hart[, 1
 
 combine_hart <- combine_hart %>% 
   mutate_at(vars(avg_score_1:avg_score_5), funs(ifelse(is.na(.), round(avg_vote, 2), .))) %>% 
+  # compute weighted average
   mutate(score_hart = (avg_score_1 * 10 + avg_score_2 * 7 + avg_score_3 * 5 + avg_score_4 * 3 + avg_score_5 * 1) / 26)
 
 scores_hart <- combine_hart %>% 
@@ -402,15 +403,14 @@ scores_hart <- combine_hart %>%
   select(writer, org, score_hart)
 
 
-# NORRIS: Add in player z-scores for each vote
+# NORRIS: Add in player average scores for each vote
 combine_norris <- votes_norris %>% 
   left_join(., metrics_norris %>% select(player, avg_score) %>% rename(vote_1 = player, avg_score_1 = avg_score), by = "vote_1") %>% 
   left_join(., metrics_norris %>% select(player, avg_score) %>% rename(vote_2 = player, avg_score_2 = avg_score), by = "vote_2") %>% 
   left_join(., metrics_norris %>% select(player, avg_score) %>% rename(vote_3 = player, avg_score_3 = avg_score), by = "vote_3") %>% 
   left_join(., metrics_norris %>% select(player, avg_score) %>% rename(vote_4 = player, avg_score_4 = avg_score), by = "vote_4") %>% 
-  left_join(., metrics_norris %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5")
-
-combine_norris <- combine_norris %>% 
+  left_join(., metrics_norris %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5") %>% 
+  # compute weighted average
   mutate(score_norris = (avg_score_1 * 10 + avg_score_2 * 7 + avg_score_3 * 5 + avg_score_4 * 3 + avg_score_5 * 1) / 26)
 
 scores_norris <- combine_norris %>% 
@@ -418,15 +418,14 @@ scores_norris <- combine_norris %>%
   select(writer, org, score_norris)
 
 
-# SELKE: Add in player z-scores for each vote
+# SELKE: Add in player average scores for each vote
 combine_selke <- votes_selke %>% 
   left_join(., metrics_selke %>% select(player, avg_score) %>% rename(vote_1 = player, avg_score_1 = avg_score), by = "vote_1") %>% 
   left_join(., metrics_selke %>% select(player, avg_score) %>% rename(vote_2 = player, avg_score_2 = avg_score), by = "vote_2") %>% 
   left_join(., metrics_selke %>% select(player, avg_score) %>% rename(vote_3 = player, avg_score_3 = avg_score), by = "vote_3") %>% 
   left_join(., metrics_selke %>% select(player, avg_score) %>% rename(vote_4 = player, avg_score_4 = avg_score), by = "vote_4") %>% 
-  left_join(., metrics_selke %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5")
-
-combine_selke <- combine_selke %>% 
+  left_join(., metrics_selke %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5") %>% 
+  # compute weighted average
   mutate(score_selke = (avg_score_1 * 10 + avg_score_2 * 7 + avg_score_3 * 5 + avg_score_4 * 3 + avg_score_5 * 1) / 26)
 
 scores_selke <- combine_selke %>% 
@@ -434,15 +433,14 @@ scores_selke <- combine_selke %>%
   select(writer, org, score_selke)
 
 
-# CALDER: Add in player z-scores for each vote
+# CALDER: Add in player average scores for each vote
 combine_calder <- votes_calder %>% 
   left_join(., metrics_calder %>% select(player, avg_score) %>% rename(vote_1 = player, avg_score_1 = avg_score), by = "vote_1") %>% 
   left_join(., metrics_calder %>% select(player, avg_score) %>% rename(vote_2 = player, avg_score_2 = avg_score), by = "vote_2") %>% 
   left_join(., metrics_calder %>% select(player, avg_score) %>% rename(vote_3 = player, avg_score_3 = avg_score), by = "vote_3") %>% 
   left_join(., metrics_calder %>% select(player, avg_score) %>% rename(vote_4 = player, avg_score_4 = avg_score), by = "vote_4") %>% 
-  left_join(., metrics_calder %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5")
-
-combine_calder <- combine_calder %>% 
+  left_join(., metrics_calder %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5") %>% 
+  # compute weighted average
   mutate(score_calder = (avg_score_1 * 10 + avg_score_2 * 7 + avg_score_3 * 5 + avg_score_4 * 3 + avg_score_5 * 1) / 26)
 
 scores_calder <- combine_calder %>% 
@@ -450,7 +448,7 @@ scores_calder <- combine_calder %>%
   select(writer, org, score_calder)
 
 
-# ALL COMBINE
+# Combine all scores and average
 total_scores <- scores_hart %>% 
   left_join(., scores_norris, by = c("writer", "org")) %>% 
   left_join(., scores_selke, by = c("writer", "org")) %>% 
@@ -458,6 +456,8 @@ total_scores <- scores_hart %>%
   mutate(total_score = (score_hart + score_norris + score_selke + score_calder) / 4) %>% 
   arrange(desc(total_score))
 
+
+# Re-scale and sum votes for "total_score" *** FINAL SCORES
 total_scores_scaled <- total_scores %>% 
   mutate_at(vars(score_hart:score_calder), funs(standardize(.))) %>% 
   mutate(total_score = (score_hart + score_norris + score_selke + score_calder)) %>% 
