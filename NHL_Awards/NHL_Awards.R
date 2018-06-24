@@ -77,7 +77,7 @@ votes_byng <- votes_byng %>%
   mutate_at(vars(vote_1:vote_5), funs(gsub(" Columbus Blue Jackets", "", .))) %>% 
   mutate_at(vars(vote_1:vote_5), funs(gsub("\\..*", "", .))) %>% 
   mutate_at(vars(vote_1:vote_5), funs(toupper(gsub(" ", ".", .)))) %>% 
-  mutate_at(vars(vote_1:vote_5), funs(ifelse(. == "EVGENII.DADONOV", "EVGENIY.DADONOV", .)))
+  mutate_at(vars(vote_1:vote_5), funs(ifelse(. == "EVGENII.DADONOV", "EVGENY.DADONOV", .)))
 
 
 names(votes_calder) <- c("order", "last_name", "first_name", "org", "vote_1", "vote_2", "vote_3", "vote_4", "vote_5")
