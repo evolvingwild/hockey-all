@@ -16,7 +16,6 @@ standardize <- function(metric) {
 }
 
 
-
 ## --------------------- ##
 ##   Load / Clean Data   ##
 ## --------------------- ##
@@ -94,16 +93,7 @@ calder_players <- (calder_players %>% filter(player != "SEBASTIAN.AHO") %>% muta
 
 
 
-
-## Load / Clean Stat Tables
-corsica_GAR_1718 <- read.csv("war_ratings_2018-04-06.csv", stringsAsFactors = F)
-corsica_all_sit_1718 <- read.csv("corsica_all_sit_1718.csv", stringsAsFactors = F)
-corsica_rel_1718 <- read.csv("corsica_rel_1718.csv", stringsAsFactors = F)
-star_ratings_1718 <- read.csv("star_ratings_1718.csv", stringsAsFactors = F)
-corsica_goalies_1718 <- read.csv("corsica_goalies_1718.csv", stringsAsFactors = F)
-NST_rel_1718 <- read.csv("NST_rel_1718.csv", stringsAsFactors = F)
-href_1718 <- read.csv("hockey_ref_1718.csv", stringsAsFactors = F)
-
+## Get data from GitHub
 corsica_GAR_1718 <- read.csv(text = getURL("https://raw.githubusercontent.com/evolvingwild/hockey-all/master/NHL_Awards/war_ratings_2018-04-06.csv"), 
                              stringsAsFactors = F)
 
@@ -124,9 +114,6 @@ NST_rel_1718 <- read.csv(text = getURL("https://raw.githubusercontent.com/evolvi
 
 href_1718 <- read.csv(text = getURL("https://raw.githubusercontent.com/evolvingwild/hockey-all/master/NHL_Awards/hockey_ref_1718.csv"), 
                       stringsAsFactors = F)
-
-
-
 
 
 # Clean / modify data
@@ -425,7 +412,6 @@ combine_norris <- votes_norris %>%
   left_join(., metrics_norris %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5")
 
 combine_norris <- combine_norris %>% 
-  mutate_at(vars(avg_score_1:avg_score_5), funs(ifelse(is.na(.), round(avg_vote, 2), .))) %>% 
   mutate(score_norris = (avg_score_1 * 10 + avg_score_2 * 7 + avg_score_3 * 5 + avg_score_4 * 3 + avg_score_5 * 1) / 26)
 
 scores_norris <- combine_norris %>% 
@@ -442,7 +428,6 @@ combine_selke <- votes_selke %>%
   left_join(., metrics_selke %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5")
 
 combine_selke <- combine_selke %>% 
-  mutate_at(vars(avg_score_1:avg_score_5), funs(ifelse(is.na(.), round(avg_vote, 2), .))) %>% 
   mutate(score_selke = (avg_score_1 * 10 + avg_score_2 * 7 + avg_score_3 * 5 + avg_score_4 * 3 + avg_score_5 * 1) / 26)
 
 scores_selke <- combine_selke %>% 
@@ -459,7 +444,6 @@ combine_calder <- votes_calder %>%
   left_join(., metrics_calder %>% select(player, avg_score) %>% rename(vote_5 = player, avg_score_5 = avg_score), by = "vote_5")
 
 combine_calder <- combine_calder %>% 
-  mutate_at(vars(avg_score_1:avg_score_5), funs(ifelse(is.na(.), round(avg_vote, 2), .))) %>% 
   mutate(score_calder = (avg_score_1 * 10 + avg_score_2 * 7 + avg_score_3 * 5 + avg_score_4 * 3 + avg_score_5 * 1) / 26)
 
 scores_calder <- combine_calder %>% 
@@ -473,8 +457,8 @@ total_scores <- scores_hart %>%
   left_join(., scores_selke, by = c("writer", "org")) %>% 
   left_join(., scores_calder, by = c("writer", "org")) %>% 
   mutate(total_score = (score_hart + score_norris + score_selke + score_calder) / 4) %>% 
-  mutate_at(vars(score_hart:total_score), funs(round(., 2))) %>% 
-  arrange(desc(total_score))
+  arrange(desc(total_score)) %>% 
+  mutate_at(vars(score_hart:total_score), funs(round(., 2)))
   
 
 
