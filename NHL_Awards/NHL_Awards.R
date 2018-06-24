@@ -67,7 +67,7 @@ votes_selke <- votes_selke %>%
   mutate_at(vars(vote_1:vote_5), funs(gsub(",.*", "", .))) %>% 
   mutate_at(vars(vote_1:vote_5), funs(gsub("\\..*", "", .))) %>% 
   mutate_at(vars(vote_1:vote_5), funs(toupper(gsub(" ", ".", .)))) %>% 
-  mutate_at(vars(vote_1:vote_5), funs(ifelse(. == "EVGENII.DADONOV", "EVGENIY.DADONOV", .)))
+  mutate_at(vars(vote_1:vote_5), funs(ifelse(. == "EVGENII.DADONOV", "EVGENY.DADONOV", .)))
 
 
 names(votes_byng) <- c("order", "last_name", "first_name", "org", "vote_1", "vote_2", "vote_3", "vote_4", "vote_5")
@@ -323,7 +323,7 @@ metrics_hart <- corsica_GAR_1718 %>%
 
 # Norris Combine
 metrics_norris <- corsica_GAR_1718 %>% 
-  select(player, position, C_GAR) %>% 
+  select(player, position, Team, TOI, C_GAR) %>% 
   left_join(., corsica_all_sit_1718 %>% select(player, GS), by = "player") %>% 
   left_join(., star_ratings_1718 %>% select(player, SR), by = "player") %>% 
   left_join(., href_1718 %>% select(player, PS), by = "player") %>% 
@@ -341,7 +341,7 @@ metrics_norris <- corsica_GAR_1718 %>%
 
 # Calder Combine
 metrics_calder <- corsica_GAR_1718 %>% 
-  select(player, position, C_GAR) %>% 
+  select(player, position, Team, TOI, C_GAR) %>% 
   left_join(., corsica_all_sit_1718 %>% select(player, GS), by = "player") %>% 
   left_join(., star_ratings_1718 %>% select(player, SR), by = "player") %>% 
   left_join(., href_1718 %>% select(player, PS), by = "player") %>% 
@@ -359,7 +359,7 @@ metrics_calder <- corsica_GAR_1718 %>%
 
 # Selke Combine
 metrics_selke <- corsica_GAR_1718 %>% 
-  select(player, position, C_GAR_D) %>% 
+  select(player, position, Team, TOI, C_GAR_D) %>% 
   left_join(., href_1718 %>% select(player, DPS), by = "player") %>% 
   left_join(., corsica_rel_1718 %>% select(player, rel_TM_CA_impact, rel_TM_xGA_impact), by = "player") %>% 
   left_join(., NST_rel_1718 %>% select(player, rel_HDCA_impact), by = "player") %>% 
@@ -373,8 +373,6 @@ metrics_selke <- corsica_GAR_1718 %>%
 
 
 #################################
-
-
 
 
 ## --------------------- ##
@@ -458,62 +456,73 @@ total_scores <- scores_hart %>%
   left_join(., scores_selke, by = c("writer", "org")) %>% 
   left_join(., scores_calder, by = c("writer", "org")) %>% 
   mutate(total_score = (score_hart + score_norris + score_selke + score_calder) / 4) %>% 
+  arrange(desc(total_score))
+
+total_scores_scaled <- total_scores %>% 
+  mutate_at(vars(score_hart:score_calder), funs(standardize(.))) %>% 
+  mutate(total_score = (score_hart + score_norris + score_selke + score_calder)) %>% 
   arrange(desc(total_score)) %>% 
   mutate_at(vars(score_hart:total_score), funs(round(., 2)))
-  
 
 
 ###########################
+
 
 
 ## ----------------- ##
 ##   Miscellaneous   ##
 ## ----------------- ##
 
+#######################
+
+# Maximum Possible Scores
+max_scores <- data.frame(max_hart = (metrics_hart[1, 10] * 10 + metrics_hart[2, 10] * 7 + metrics_hart[3, 10] * 5 + metrics_hart[4, 10] * 3 + metrics_hart[5, 10] * 1) / 26, 
+                         max_norris = (metrics_norris[1, 10] * 10 + metrics_norris[2, 10] * 7 + metrics_norris[3, 10] * 5 + metrics_norris[4, 10] * 3 + metrics_norris[5, 10] * 1) / 26, 
+                         max_selke = (metrics_selke[1, 10] * 10 + metrics_selke[2, 10] * 7 + metrics_selke[3, 10] * 5 + metrics_selke[4, 10] * 3 + metrics_selke[5, 10] * 1) / 26, 
+                         max_calder = (metrics_calder[1, 10] * 10 + metrics_calder[2, 10] * 7 + metrics_calder[3, 10] * 5 + metrics_calder[4, 10] * 3 + metrics_calder[5, 10] * 1) / 26
+                         )
+
+max_scores <- max_scores %>% mutate_if(is.numeric, funs(round(., 2)))
+
 
 # View specific writer's full ballot
 fun.writer_ballot <- function(last.name) { 
   
-  writer_last_name <- last.name
+  writer_last_name <- "last.name"
   
   writer_ballot <- rbind(votes_hart %>% filter(last_name == writer_last_name), 
                          votes_norris %>% filter(last_name == writer_last_name), 
                          votes_selke %>% filter(last_name == writer_last_name), 
                          votes_calder %>% filter(last_name == writer_last_name))
+
+  if(nrow(writer_ballot) == 0) { 
+    stop("No Results")
+    }
   
-  writer_ballot[, 1] <- c("hart", "norris", "selke", "calder")
+  if(writer_last_name == "Miller") { 
+    writer_ballot[, 1] <- c("Hart", "Hart", "Norris", "Norris", "Selke", "Selke", "Calder", "Calder")
+  } else { 
+    writer_ballot[, 1] <- c("Hart", "Norris", "Selke", "Calder")  
+  }
+  
+  writer_ballot <- writer_ballot %>% 
+    mutate(writer = paste0(first_name, " ", last_name)) %>% 
+    rename(trophy = order) %>% 
+    select(trophy, writer, vote_1:vote_5) %>% 
+    arrange(writer)
   
   View(writer_ballot)
   
-  }
-fun.writer_ballot(last.name = "Haggerty")
+}
+fun.writer_ballot(last.name = "df")
 
 
 # Correlation matrix of writers' votes
 library(psych)
-pairs.panels(total_scores %>% select(score_hart:score_calder))
+pairs.panels(total_scores_scaled %>% select(score_hart:score_calder))
 
 
-
-
-
-
-
-### -- Depricated -- ###
-
-# Max Scores
-max_scores <- data.frame(max_hart = (join_hart[1, 2] * 10 + join_hart[2, 2] * 7 + join_hart[3, 2] * 5 + join_hart[4, 2] * 3 + join_hart[5, 2] * 1) / 26, 
-                         max_norris = (join_norris[1, 2] * 10 + join_norris[2, 2] * 7 + join_norris[3, 2] * 5 + join_norris[4, 2] * 3 + join_norris[5, 2] * 1) / 26, 
-                         max_selke = (join_selke[1, 2] * 10 + join_selke[2, 2] * 7 + join_selke[3, 2] * 5 + join_selke[4, 2] * 3 + join_selke[5, 2] * 1) / 26, 
-                         max_calder = (join_calder[1, 2] * 10 + join_calder[2, 2] * 7 + join_calder[3, 2] * 5 + join_calder[4, 2] * 3 + join_calder[5, 2] * 1) / 26 
-                         )
-
-max_scores <- max_scores %>% 
-  mutate(max_total = (max_hart + max_norris + max_selke + max_calder) / 4) %>% 
-  mutate_if(is.numeric, funs(round(., 2)))
-
-
-
+#######################
 
 
 
