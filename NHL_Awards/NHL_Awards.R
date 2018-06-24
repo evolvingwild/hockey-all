@@ -488,7 +488,7 @@ max_scores <- max_scores %>% mutate_if(is.numeric, funs(round(., 2)))
 # View specific writer's full ballot
 fun.writer_ballot <- function(last.name) { 
   
-  writer_last_name <- "last.name"
+  writer_last_name <- last.name
   
   writer_ballot <- rbind(votes_hart %>% filter(last_name == writer_last_name), 
                          votes_norris %>% filter(last_name == writer_last_name), 
@@ -498,7 +498,6 @@ fun.writer_ballot <- function(last.name) {
   if(nrow(writer_ballot) == 0) { 
     stop("No Results")
     }
-  
   if(writer_last_name == "Miller") { 
     writer_ballot[, 1] <- c("Hart", "Hart", "Norris", "Norris", "Selke", "Selke", "Calder", "Calder")
   } else { 
@@ -514,7 +513,7 @@ fun.writer_ballot <- function(last.name) {
   View(writer_ballot)
   
 }
-fun.writer_ballot(last.name = "df")
+fun.writer_ballot(last.name = "McKenzie")
 
 
 # Correlation matrix of writers' votes
