@@ -1,9 +1,17 @@
-## --------------------------- ##
-##   Shot Location Functions   ##
-## --------------------------- ##
+## ----------------------------- ##
+##   Draw NHL Rink with ggplot   ##
+## ----------------------------- ##
 
-#################################
+## Function to draw NHL sized full or half rink
+## - rink_type = "full" will plot a full NHL rink
+## - rink_type = "half" will plot a half NHL rink
 
+
+## Dependencies
+library(tidyverse)
+
+
+## Function to plot NHL rink(s)
 fun.draw_rink <- function(lines_scale = 0.5, rink_type = "full") {
   
   ## Necessary objects for plotting
@@ -425,5 +433,12 @@ fun.draw_rink <- function(lines_scale = 0.5, rink_type = "full") {
   
   }
 
-#################################
+
+## Example - Full Rink
+fun.draw_rink(rink_type = "full") + 
+  coord_fixed()
+
+
+## Example - Half Rink
+fun.draw_rink(rink_type = "half")
 
