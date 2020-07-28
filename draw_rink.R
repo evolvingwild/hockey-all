@@ -7,8 +7,8 @@
 ## - rink_type = "half" will plot a half NHL rink
 
 
-## Dependencies
-library(tidyverse)
+## Dependencies (load in your local enviornment)
+# library(tidyverse)
 
 
 ## Function to plot NHL rink(s)
@@ -434,11 +434,15 @@ fun.draw_rink <- function(lines_scale = 0.5, rink_type = "full") {
   }
 
 
-## Example - Full Rink
-fun.draw_rink(rink_type = "full") + 
-  coord_fixed()
 
+## ------------ ##
+##   Examples   ##
+## ------------ ##
 
-## Example - Half Rink
-fun.draw_rink(rink_type = "half")
+## Full Rink
+# fun.draw_rink(rink_type = "full") + 
+#   coord_fixed()
+
+## Half Rink
+# fun.draw_rink(rink_type = "half")
 
